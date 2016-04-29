@@ -31,41 +31,47 @@ public class UDPClient extends Thread{
     private Runnable sender;
     private Runnable receiver;
     
-    public UDPClient (String _IPAddress, int _port) throws UnknownHostException {
+    public UDPClient (String _IPAddress, int _port) throws UnknownHostException, SocketException {
         this.port = _port;
         this.IPAddress = InetAddress.getByName(_IPAddress);
         this.targetPort = _port;
         this.targetIPAddress = InetAddress.getByName(_IPAddress);
-        sender = new Runnable(){
-            public void run(){
-                try {
-                    call();
-                } catch (IOException ex) {
-                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            public void call() throws SocketException, IOException{
-                datagramSocket = new DatagramSocket();
-                DatagramSocket serverSocket = new DatagramSocket(port-1);
-                byte[] receiveData = new byte[1024];
-
-                BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-                UnreliableSender unreliableSender = new UnreliableSender(datagramSocket);
-
-                while (true)
-                {
-                    String sentence = inFromUser.readLine();
-                    if (sentence.equals("quit"))
-                    {
-                            break;
-                    }
-
-                    send(sentence, targetIPAddress, targetPort, unreliableSender);
-                }
-                datagramSocket.close();
-            }
-        };
-        
+        this.datagramSocket = new DatagramSocket();
+//        this.datagramSocket = new DatagramSocket();
+//        DatagramSocket serverSocket = new DatagramSocket(port);
+//        sender = new Runnable(){
+//            public void run(){
+//                try {
+//                    call();
+//                } catch (IOException ex) {
+//                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
+//                }
+//            }
+//            public void call() throws SocketException, IOException{
+//                datagramSocket = new DatagramSocket();
+//                DatagramSocket serverSocket = new DatagramSocket(port-1);
+//                byte[] receiveData = new byte[1024];
+//
+//                BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+//                UnreliableSender unreliableSender = new UnreliableSender(datagramSocket);
+//
+//                while (true)
+//               {    
+//                    String sentence = inFromUser.readLine();
+//                    String target = sentence.split(" ")[0];
+//                    if (target.equals("toOthers")){
+//                        if (sentence.split(" ")[1].equals("quit"))
+//                        {
+//                                break;
+//                        }
+//
+//                        send(sentence, targetIPAddress, targetPort, unreliableSender);
+//                    }
+//                }
+//                datagramSocket.close();
+//            }
+//        };
+//        
         receiver = new Runnable(){
             public void run(){
                 try {
@@ -100,28 +106,32 @@ public class UDPClient extends Thread{
     
     public void run () {
         new Thread(receiver).start();
-        new Thread(sender).start();
+//        new Thread(sender).start();
     }
     
-    public void call () throws SocketException, IOException {
-        this.datagramSocket = new DatagramSocket();
-        DatagramSocket serverSocket = new DatagramSocket(port);
-        byte[] receiveData = new byte[1024];
-
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+    public void call (String sentence) throws IOException {
+//        this.datagramSocket = new DatagramSocket();
+//        DatagramSocket serverSocket = new DatagramSocket(targetPort);
+//        byte[] receiveData = new byte[1024];
+//
+////        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
 
-        while (true)
-        {
-            String sentence = inFromUser.readLine();
-            if (sentence.equals("quit"))
-            {
-                    break;
-            }
+//        while (true)
+//        {
+//            sentence = inFromUser.readLine();
+//            String target = sentence.split(" ")[0];
+//            if (target.equals("toOthers")){
+                if (sentence.equals("quit"))
+                {
+//                        break;
+                    this.datagramSocket.close();
+                }
 
-            this.send(sentence, targetIPAddress, targetPort, unreliableSender);
-        }
-        this.datagramSocket.close();
+                this.send(sentence, targetIPAddress, targetPort, unreliableSender);
+//            }
+//        }
+//        this.datagramSocket.close();
     }
     
     public void send (String sentence, InetAddress targetAddress, int targetPort, UnreliableSender unreliableSender) throws IOException {
