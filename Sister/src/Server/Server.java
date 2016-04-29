@@ -5,6 +5,7 @@
  */
 package Server;
 
+import Client.Client;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -25,10 +27,16 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
+    private ArrayList<Client> Clients;
     
     public Server (int port) throws IOException {
         this.listenPort = port;
-        serverSocket = new ServerSocket(listenPort);
+        this.serverSocket = new ServerSocket(listenPort);
+        this.Clients = new ArrayList<Client>();
+    }
+
+    public void addClient (Client client) {
+        Clients.add(client);
     }
     
     public void start () throws IOException, ParseException {
@@ -60,4 +68,9 @@ public class Server {
         System.out.println("Before Return");
         return jsonRequest;
     }
+    
+    public ArrayList<Client> getClients () {
+        return this.Clients;
+    }
+    
 }

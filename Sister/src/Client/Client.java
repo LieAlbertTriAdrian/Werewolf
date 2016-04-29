@@ -11,6 +11,8 @@ public class Client {
     private UDPClient udpClient;
     private InetAddress IPAddress;
     private int port;
+    private int isAlive;
+    private int playerId;
 
     
     public Client (String IPAddress, int port) throws IOException {
@@ -24,5 +26,17 @@ public class Client {
     
     public UDPClient getUDPClient () {
         return this.udpClient;
+    }
+    
+    public int getIsAlive () {
+        return this.isAlive;
+    }
+    
+    public int getPlayerId () {
+        return this.playerId;
+    }
+    
+    public void setIsAlive (int _isAlive) {
+        this.isAlive = _isAlive;
     }
 }
