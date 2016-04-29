@@ -40,12 +40,13 @@ public class Server {
     }
     
     public void start () throws IOException, ParseException {
+        connectionSocket = serverSocket.accept();
         while(true) {             
-            connectionSocket = serverSocket.accept();
-            JSONObject jsonRequest = receive();
+            JSONObject jsonRequest = this.receive();
             JSONObject jsonResponse = new JSONObject();
             System.out.println(jsonRequest);
             String method = (String) jsonRequest.get("method");
+            System.out.println("Method : " + method);
             if (method.equals("join")){
                 String username = (String) jsonRequest.get("username");
                 jsonResponse.put("status","ok");
@@ -77,6 +78,7 @@ public class Server {
     }
     
     public JSONObject receive () throws IOException, ParseException {
+        System.out.println("Masuk Receive");
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromClient.readLine());

@@ -5,10 +5,25 @@
  */
 package Server;
 
+import java.net.Socket;
+
 /**
  *
  * @author alberttriadrian
  */
-public class ServerThread {
+public class ServerThread extends Thread {
+    private Socket socket;
+    private int clientId;
+    private Server server;
+    
+    public ServerThread (Socket socket, int clientId, Server server) {
+        this.socket = socket;
+        this.clientId = clientId;
+        this.server = server;
+    }
+
+    public void run () {
+               
+    }
     
 }
