@@ -59,8 +59,8 @@ public class Server {
             } else {
                 jsonResponse.put("status", "wrong request");
             }
-            send(jsonResponse);
-        }  
+            this.send(jsonResponse);
+        }
     }
 
     public void send (JSONObject jsonResponse) throws IOException {

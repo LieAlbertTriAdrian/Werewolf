@@ -1,34 +1,28 @@
-import Sender.UnreliableSender;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
+
+package Client;
+
+import TCP.TCPClient;
+import UDP.UDPClient;
+import java.io.IOException;
 import java.net.InetAddress;
 
 public class Client {
-    public static void main(String args[]) throws Exception
-    {
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+    private TCPClient tcpClient;
+    private UDPClient udpClient;
+    private InetAddress IPAddress;
+    private int port;
 
-        String targetAddress = "localhost";
-        InetAddress IPAddress = InetAddress.getByName(targetAddress);
-        int targetPort = 9876;
-
-        DatagramSocket datagramSocket = new DatagramSocket();
-        UnreliableSender unreliableSender = new UnreliableSender(datagramSocket);
-
-        while (true)
-        {
-                String sentence = inFromUser.readLine();
-                if (sentence.equals("quit"))
-                {
-                        break;
-                }
-
-                byte[] sendData = sentence.getBytes();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, targetPort);
-                unreliableSender.send(sendPacket);
-        }
-        datagramSocket.close();
+    
+    public Client (String IPAddress, int port) throws IOException {
+        this.tcpClient = new TCPClient(IPAddress,port);
+        this.udpClient = new UDPClient(IPAddress,port);
+    }
+    
+    public TCPClient getTCPClient () {
+        return this.tcpClient;
+    }
+    
+    public UDPClient getUDPClient () {
+        return this.udpClient;
     }
 }

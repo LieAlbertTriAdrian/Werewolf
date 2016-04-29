@@ -5,17 +5,16 @@
  */
 package Testing;
 
-import TCP.TCPClient;
+import Client.Client;
 import java.io.IOException;
 import org.json.simple.parser.ParseException;
-
 /**
  *
  * @author alberttriadrian
  */
-public class TCPClientTesting {
+public class ClientTesting {
     public static void main(String args[]) throws IOException, ParseException {
-        TCPClient client = new TCPClient("localhost", 6789);
-        client.start();
+        Client client = new Client("localhost", 6789);
+        client.getTCPClient().start();
     }
 }

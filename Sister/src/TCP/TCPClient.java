@@ -48,7 +48,7 @@ public class TCPClient {
     }
     
     public void send (JSONObject jsonRequest) throws IOException {
-        DataOutputStream outToServer = new DataOutputStream(this.socket.getOutputStream());
+        DataOutputStream outToServer = new DataOutputStream(this.socket.getOutputStream());   
         System.out.println(jsonRequest);
         outToServer.writeBytes(jsonRequest.toString() + "\n");        
     }
@@ -92,9 +92,9 @@ public class TCPClient {
     public void leaveGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","leave");
-        send(jsonRequest);
-        JSONObject jsonResponse = receive();
-        System.out.println(jsonResponse);
+        this.send(jsonRequest);
+        JSONObject jsonResponse = this.receive();
+        System.out.println(jsonResponse.toString());
     }
     
     public void readyUp() throws IOException, ParseException{
