@@ -15,7 +15,7 @@ import org.json.simple.parser.ParseException;
  */
 public class ServerTesting {
     public static void main(String args[]) throws IOException, ParseException {
-        Server server = new Server(6788);
+        Server server = new Server(6789);
         server.start();
     }
 }

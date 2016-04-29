@@ -32,17 +32,19 @@ public class Server {
     }
     
     public void start () throws IOException, ParseException {
-        connectionSocket = serverSocket.accept();
         while(true) {             
-            JSONObject jsonRequest = receive();
+            connectionSocket = serverSocket.accept();
+            System.out.println("Server looping");
+            JSONObject jsonRequest = this.receive();
             JSONObject jsonResponse = new JSONObject();
-            if(jsonRequest.get("method") == "leave"){
-                jsonResponse.put("status", this);
+            String method = jsonRequest.get("method").toString();
+            if(method.equals("leave")){
+                jsonResponse.put("status", "ok");
             } else {
                 jsonResponse.put("status", "wrong request");
             }
-            send(jsonResponse);
-        }  
+            this.send(jsonResponse);
+        }
     }
 
     public void send (JSONObject jsonResponse) throws IOException {
@@ -53,8 +55,10 @@ public class Server {
     public JSONObject receive () throws IOException, ParseException {
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
+//        System.out.println("Server Receive, inFromClient :" + inFromClient.readLine());
         Object obj = parser.parse(inFromClient.readLine());
         JSONObject jsonRequest = (JSONObject) obj;
+        System.out.println("Before Return");
         return jsonRequest;
     }
 }

@@ -6,10 +6,6 @@ import java.net.InetAddress;
 
 public class Receiver
 {
-	/**
-	 * Contoh kode program untuk node yang menerima paket. Idealnya dalam paxos
-	 * balasan juga dikirim melalui UnreliableSender.
-	 */
 	public static void main(String args[]) throws Exception
 	{
 		int listenPort = 9876;
