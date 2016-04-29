@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Scanner;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -42,12 +43,25 @@ public class TCPClient extends Thread{
     }
     
     public void call () throws IOException, ParseException {   
-        this.leaveGame();
+        while (true){
+            Scanner input = new Scanner(System.in);
+            System.out.print("Method : ");
+            String method = input.nextLine();
+            if (method.equals("join")){
+                joinGame();
+            } else if (method.equals("leave")){
+                leaveGame();
+            } else if (method.equals("ready")){
+                readyUp();
+            } else if (method.equals("client_address")){
+                listClient();
+            }
+        }
     }
     
     public void send (JSONObject jsonRequest) throws IOException {
         DataOutputStream outToServer = new DataOutputStream(this.socket.getOutputStream());   
-        System.out.println("TCP Client sending");
+        System.out.println(jsonRequest);
         outToServer.writeBytes(jsonRequest.toString() + "\n");        
     }
     
@@ -75,12 +89,39 @@ public class TCPClient extends Thread{
 //            System.out.println("FROM SERVER: " + modifiedSentence);   
 //            clientSocket.close();  
 //    } 
+    public void joinGame() throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method","join");
+        Scanner input = new Scanner(System.in);
+        System.out.print("Enter your username : ");
+        String username = input.nextLine();
+        jsonRequest.put("username", username);
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
     
     public void leaveGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","leave");
         this.send(jsonRequest);
         JSONObject jsonResponse = this.receive();
-        System.out.println("Leave game Response : " + jsonResponse.toString());
+        System.out.println(jsonResponse.toString());
+    }
+    
+    public void readyUp() throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method","ready");
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
+    
+    public void listClient() throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method","client_address");
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
     }
 }

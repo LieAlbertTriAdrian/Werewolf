@@ -5,6 +5,7 @@
  */
 package Server;
 
+import Client.Client;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -25,21 +27,44 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
+    private ArrayList<Client> Clients;
     
     public Server (int port) throws IOException {
         this.listenPort = port;
-        serverSocket = new ServerSocket(listenPort);
+        this.serverSocket = new ServerSocket(listenPort);
+        this.Clients = new ArrayList<Client>();
+    }
+
+    public void addClient (Client client) {
+        Clients.add(client);
     }
     
     public void start () throws IOException, ParseException {
+        connectionSocket = serverSocket.accept();
         while(true) {             
-            connectionSocket = serverSocket.accept();
-            System.out.println("Server looping");
             JSONObject jsonRequest = this.receive();
             JSONObject jsonResponse = new JSONObject();
-            String method = jsonRequest.get("method").toString();
-            if(method.equals("leave")){
+            System.out.println(jsonRequest);
+            String method = (String) jsonRequest.get("method");
+            System.out.println("Method : " + method);
+            if (method.equals("join")){
+                String username = (String) jsonRequest.get("username");
+                jsonResponse.put("status","ok");
+                jsonResponse.put("player_id","3");
+            } else if(method.equals("leave")){
                 jsonResponse.put("status", "ok");
+            } else if (method.equals("ready")){
+                jsonResponse.put("status","ok");
+                jsonResponse.put("description","waiting for other player to start");
+            } else if (method.equals("client_address")){
+                JSONObject clients = new JSONObject();
+                clients.put("player_id","0");
+                clients.put("is_alive","1");
+                clients.put("address","192.168.1.1");
+                clients.put("port","9999");
+                clients.put("username","sister");
+                jsonResponse.put("status","ok");
+                jsonResponse.put("clients",clients);
             } else {
                 jsonResponse.put("status", "wrong request");
             }
@@ -53,11 +78,16 @@ public class Server {
     }
     
     public JSONObject receive () throws IOException, ParseException {
+        System.out.println("Masuk Receive");
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromClient.readLine());
         JSONObject jsonRequest = (JSONObject) obj;
-        System.out.println("Before Return");
         return jsonRequest;
     }
+    
+    public ArrayList<Client> getClients () {
+        return this.Clients;
+    }
+    
 }

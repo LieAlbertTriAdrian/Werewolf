@@ -12,6 +12,8 @@ public class Client {
     private InetAddress IPAddress;
     private int port;
     private String role;
+    private int isAlive;
+    private int playerId;
     
     public Client (String IPAddress, int port, int serverPort) throws IOException {
         this.tcpClient = new TCPClient(IPAddress,serverPort);
@@ -32,5 +34,17 @@ public class Client {
     
     public UDPClient getUDPClient () {
         return this.udpClient;
+    }
+    
+    public int getIsAlive () {
+        return this.isAlive;
+    }
+    
+    public int getPlayerId () {
+        return this.playerId;
+    }
+    
+    public void setIsAlive (int _isAlive) {
+        this.isAlive = _isAlive;
     }
 }
