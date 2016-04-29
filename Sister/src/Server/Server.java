@@ -32,12 +32,30 @@ public class Server {
     }
     
     public void start () throws IOException, ParseException {
-        connectionSocket = serverSocket.accept();
         while(true) {             
+            connectionSocket = serverSocket.accept();
             JSONObject jsonRequest = receive();
             JSONObject jsonResponse = new JSONObject();
-            if(jsonRequest.get("method") == "leave"){
-                jsonResponse.put("status", this);
+            System.out.println(jsonRequest);
+            String method = (String) jsonRequest.get("method");
+            if (method.equals("join")){
+                String username = (String) jsonRequest.get("username");
+                jsonResponse.put("status","ok");
+                jsonResponse.put("player_id","3");
+            } else if(method.equals("leave")){
+                jsonResponse.put("status", "ok");
+            } else if (method.equals("ready")){
+                jsonResponse.put("status","ok");
+                jsonResponse.put("description","waiting for other player to start");
+            } else if (method.equals("client_address")){
+                JSONObject clients = new JSONObject();
+                clients.put("player_id","0");
+                clients.put("is_alive","1");
+                clients.put("address","192.168.1.1");
+                clients.put("port","9999");
+                clients.put("username","sister");
+                jsonResponse.put("status","ok");
+                jsonResponse.put("clients",clients);
             } else {
                 jsonResponse.put("status", "wrong request");
             }
