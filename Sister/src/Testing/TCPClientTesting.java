@@ -9,13 +9,14 @@ import TCP.TCPClient;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import org.json.simple.parser.ParseException;
 
 /**
  *
  * @author alberttriadrian
  */
 public class TCPClientTesting {
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException, ParseException {
         TCPClient client = new TCPClient("localhost", 6788);
         client.start();
     }

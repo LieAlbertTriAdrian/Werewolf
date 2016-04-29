@@ -10,6 +10,9 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -26,42 +29,45 @@ public class TCPClient {
         this.socket = new Socket(this.IPAddress, this.port); 
     }
     
-    public void start () throws IOException {
-        BufferedReader inFromUser = new BufferedReader( new InputStreamReader(System.in));   
-        
-        String sentence = inFromUser.readLine();
-        this.send(sentence);
-        String modifiedSentence = this.receive();
-        System.out.println("FROM SERVER: " + modifiedSentence);   
+    public void start () throws IOException, ParseException {   
+        leaveGame();
     }
     
-    public void send (String sentence) throws IOException {
+    public void send (JSONObject jsonRequest) throws IOException {
         DataOutputStream outToServer = new DataOutputStream(this.socket.getOutputStream());   
-        outToServer.writeBytes(sentence + "\n");        
+        outToServer.writeBytes(jsonRequest.toString() + "\n");        
     }
     
-    public String receive () throws IOException {
-        System.out.println("Masuk Stream");
+    public JSONObject receive () throws IOException, ParseException {
         BufferedReader inFromServer = new BufferedReader(new InputStreamReader(this.socket.getInputStream()));   
-        String response = inFromServer.readLine();
-        System.out.println("Debug : " + response);
-        return response;
+        JSONParser parser = new JSONParser();
+        Object obj = parser.parse(inFromServer.readLine());
+        JSONObject jsonResponse = (JSONObject) obj;
+        return jsonResponse;
     }
 
     public void close() throws IOException {
         this.socket.close();
     }
     
-    public static void main(String argv[]) throws Exception {   
-            String sentence;   
-            String modifiedSentence;    
-            BufferedReader inFromUser = new BufferedReader( new InputStreamReader(System.in));   
-            Socket clientSocket = new Socket("localhost", 6789);   
-            DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());   
-            BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));   
-            sentence = inFromUser.readLine();   outToServer.writeBytes(sentence + '\n');   
-            modifiedSentence = inFromServer.readLine();   
-            System.out.println("FROM SERVER: " + modifiedSentence);   
-            clientSocket.close();  
-    } 
+//    public static void main(String argv[]) throws Exception {   
+//            String sentence;   
+//            String modifiedSentence;    
+//            BufferedReader inFromUser = new BufferedReader( new InputStreamReader(System.in));   
+//            Socket clientSocket = new Socket("localhost", 6789);   
+//            DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());   
+//            BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));   
+//            sentence = inFromUser.readLine();   outToServer.writeBytes(sentence + '\n');   
+//            modifiedSentence = inFromServer.readLine();   
+//            System.out.println("FROM SERVER: " + modifiedSentence);   
+//            clientSocket.close();  
+//    } 
+    
+    public void leaveGame() throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method","leave");
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
 }

@@ -13,6 +13,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -28,23 +31,30 @@ public class Server {
         serverSocket = new ServerSocket(listenPort);
     }
     
-    public void start () throws IOException {
+    public void start () throws IOException, ParseException {
         connectionSocket = serverSocket.accept();
         while(true) {             
-            String sentence = this.receive();
-            this.send(sentence.toUpperCase());
+            JSONObject jsonRequest = receive();
+            JSONObject jsonResponse = new JSONObject();
+            if(jsonRequest.get("method") == "leave"){
+                jsonResponse.put("status", this);
+            } else {
+                jsonResponse.put("status", "wrong request");
+            }
+            send(jsonResponse);
         }  
     }
 
-    public void send (String sentence) throws IOException {
+    public void send (JSONObject jsonResponse) throws IOException {
         DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());             
-        outToClient.writeBytes(sentence);
+        outToClient.writeBytes(jsonResponse.toString() + "\n");
     }
     
-    public String receive () throws IOException {
+    public JSONObject receive () throws IOException, ParseException {
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
-        String response = inFromClient.readLine();
-        System.out.println("Received: " + response);
-        return response;
+        JSONParser parser = new JSONParser();
+        Object obj = parser.parse(inFromClient.readLine());
+        JSONObject jsonRequest = (JSONObject) obj;
+        return jsonRequest;
     }
 }

@@ -7,13 +7,14 @@ package Testing;
 
 import Server.Server;
 import java.io.IOException;
+import org.json.simple.parser.ParseException;
 
 /**
  *
  * @author alberttriadrian
  */
 public class ServerTesting {
-    public static void main(String args[]) throws IOException {
+    public static void main(String args[]) throws IOException, ParseException {
         Server server = new Server(6788);
         server.start();
     }
