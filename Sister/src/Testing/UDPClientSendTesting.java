@@ -18,6 +18,5 @@ public class UDPClientSendTesting {
         UDPClient client = new UDPClient("localhost", 9876);
         client.setTargetIPAddress("localhost");
         client.setTargetPort(9876);
-        client.start();
     }
 }

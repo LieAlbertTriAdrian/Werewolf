@@ -10,6 +10,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -18,7 +20,7 @@ import org.json.simple.parser.ParseException;
  *
  * @author alberttriadrian
  */
-public class TCPClient {
+public class TCPClient extends Thread{
     private String IPAddress;
     private int port;
     private Socket socket;
@@ -29,7 +31,17 @@ public class TCPClient {
         this.socket = new Socket(this.IPAddress, this.port); 
     }
     
-    public void start () throws IOException, ParseException {   
+    public void run () {
+        try {
+            call();
+        } catch (IOException ex) {
+            Logger.getLogger(TCPClient.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (ParseException ex) {
+            Logger.getLogger(TCPClient.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void call () throws IOException, ParseException {   
         this.leaveGame();
     }
     

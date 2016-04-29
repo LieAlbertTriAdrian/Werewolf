@@ -11,11 +11,19 @@ public class Client {
     private UDPClient udpClient;
     private InetAddress IPAddress;
     private int port;
-
+    private String role;
     
-    public Client (String IPAddress, int port) throws IOException {
-        this.tcpClient = new TCPClient(IPAddress,port);
+    public Client (String IPAddress, int port, int serverPort) throws IOException {
+        this.tcpClient = new TCPClient(IPAddress,serverPort);
         this.udpClient = new UDPClient(IPAddress,port);
+    }
+    
+    public void startTCPClient(){
+        tcpClient.start();
+    }
+    
+    public void startUDPClient(){
+        udpClient.start();
     }
     
     public TCPClient getTCPClient () {

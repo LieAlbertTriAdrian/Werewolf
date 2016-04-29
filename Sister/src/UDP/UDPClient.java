@@ -15,23 +15,79 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *
  * @author alberttriadrian
  */
-public class UDPClient {
+public class UDPClient extends Thread{
     private InetAddress IPAddress;
     private int port;
     private InetAddress targetIPAddress;
     private int targetPort;
     private DatagramSocket datagramSocket;
+    private Runnable sender;
+    private Runnable receiver;
     
     public UDPClient (String _IPAddress, int _port) throws UnknownHostException {
         this.port = _port;
         this.IPAddress = InetAddress.getByName(_IPAddress);
         this.targetPort = _port;
         this.targetIPAddress = InetAddress.getByName(_IPAddress);
+        sender = new Runnable(){
+            public void run(){
+                try {
+                    call();
+                } catch (IOException ex) {
+                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            public void call() throws SocketException, IOException{
+                datagramSocket = new DatagramSocket();
+                DatagramSocket serverSocket = new DatagramSocket(port-1);
+                byte[] receiveData = new byte[1024];
+
+                BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+                UnreliableSender unreliableSender = new UnreliableSender(datagramSocket);
+
+                while (true)
+                {
+                    String sentence = inFromUser.readLine();
+                    if (sentence.equals("quit"))
+                    {
+                            break;
+                    }
+
+                    send(sentence, targetIPAddress, targetPort, unreliableSender);
+                }
+                datagramSocket.close();
+            }
+        };
+        
+        receiver = new Runnable(){
+            public void run(){
+                try {
+                    receive();
+                } catch (IOException ex) {
+                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            public void receive() throws IOException{
+               DatagramSocket serverSocket = new DatagramSocket(port);
+                byte[] receiveData = new byte[1024];
+
+                while (true) {
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    serverSocket.receive(receivePacket);
+
+                    String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    System.out.println("RECEIVED: " + sentence);
+
+                }     
+           } 
+        };
     }
     
     public void setTargetIPAddress (String _IPAddress) throws UnknownHostException {
@@ -42,8 +98,15 @@ public class UDPClient {
         this.targetPort = _port;
     }
     
-    public void start () throws SocketException, IOException {
+    public void run () {
+        new Thread(receiver).start();
+        new Thread(sender).start();
+    }
+    
+    public void call () throws SocketException, IOException {
         this.datagramSocket = new DatagramSocket();
+        DatagramSocket serverSocket = new DatagramSocket(port);
+        byte[] receiveData = new byte[1024];
 
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
@@ -67,8 +130,8 @@ public class UDPClient {
         unreliableSender.send(sendPacket);        
     }
     
-    public void receive (int listenPort) throws IOException {
-        DatagramSocket serverSocket = new DatagramSocket(listenPort);
+    public void receive () throws IOException {
+        DatagramSocket serverSocket = new DatagramSocket(port);
         byte[] receiveData = new byte[1024];
         
         while (true) {
