@@ -55,7 +55,6 @@ public class Server {
     public JSONObject receive () throws IOException, ParseException {
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
-//        System.out.println("Server Receive, inFromClient :" + inFromClient.readLine());
         Object obj = parser.parse(inFromClient.readLine());
         JSONObject jsonRequest = (JSONObject) obj;
         System.out.println("Before Return");
