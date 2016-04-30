@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Testing;
+
 
 import UDP.UDPClient;
 import java.io.IOException;
