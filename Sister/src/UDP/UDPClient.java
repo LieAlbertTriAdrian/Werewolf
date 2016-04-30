@@ -32,6 +32,7 @@ public class UDPClient extends Thread{
     private DatagramSocket datagramSocket;
     private Runnable sender;
     public String method;
+    public int timeStamp;
     
     public UDPClient (String _IPAddress, int _port) throws UnknownHostException, SocketException {
         this.port = _port;
@@ -39,6 +40,7 @@ public class UDPClient extends Thread{
         this.targetPort = _port;
         this.targetIPAddress = InetAddress.getByName(_IPAddress);
         this.datagramSocket = new DatagramSocket();
+        this.timeStamp = 0;
     }
     
     public void setTargetIPAddress (String _IPAddress) throws UnknownHostException {

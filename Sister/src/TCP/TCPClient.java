@@ -23,11 +23,14 @@ public class TCPClient extends Thread{
     private String IPAddress;
     private int port;
     private Socket socket;
+    public String method;
+    public int timeStamp;
     
     public TCPClient (String _IPAddress, int _port) throws IOException {
         this.IPAddress = _IPAddress;
         this.port = _port;
         this.socket = new Socket(this.IPAddress, this.port); 
+        this.timeStamp = 0;
     }
     
     public void run () {
@@ -49,6 +52,8 @@ public class TCPClient extends Thread{
             readyUp();
         } else if (method.equals("client_address")){
             listClient();
+        } else if (method.split(" ")[0].equals("get_other")){
+            getOther(method.split(" ")[1]);
         }
     }
     
@@ -118,6 +123,15 @@ public class TCPClient extends Thread{
     public void listClient() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","client_address");
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
+    
+    public void getOther(String playerId) throws IOException, ParseException {
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method","get_other");
+        jsonRequest.put("playerId",playerId);
         send(jsonRequest);
         JSONObject jsonResponse = receive();
         System.out.println(jsonResponse);

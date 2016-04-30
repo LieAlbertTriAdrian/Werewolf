@@ -65,6 +65,8 @@ public class Server {
                         jsonResponse = readyUpResponse(jsonRequest);
                     else if (method.equals("client_address"))
                         jsonResponse = listClient(jsonRequest);
+                    else if (method.equals("get_other"))
+                        jsonResponse = getClient(Integer.parseInt((String) jsonRequest.get("playerId")));
                     else {
                         jsonResponse.put("status", "wrong request");
                     }
@@ -72,6 +74,10 @@ public class Server {
                 }
             }
         };
+    }
+    
+    public JSONObject getClient(int playerId){
+        return Clients.get(playerId);
     }
 
     public void addClient (JSONObject client) {
@@ -93,7 +99,7 @@ public class Server {
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromClient.readLine());
-        JSONObject jsonRequest = (JSONObject) obj;
+        JSONObject jsonRequest = new JSONObject(obj.toString());
         return jsonRequest;
     }
     
