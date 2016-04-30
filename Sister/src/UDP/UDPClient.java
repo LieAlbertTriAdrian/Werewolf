@@ -55,7 +55,6 @@ public class UDPClient extends Thread{
 
                     String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
                     System.out.println("RECEIVED: " + sentence);
-
                 }     
            } 
         };

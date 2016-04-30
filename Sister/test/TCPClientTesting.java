@@ -3,18 +3,19 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Testing;
 
-import Client.Client;
+
+import TCP.TCPClient;
 import java.io.IOException;
 import org.json.simple.parser.ParseException;
+
 /**
  *
  * @author alberttriadrian
  */
-public class ClientTesting {
+public class TCPClientTesting {
     public static void main(String args[]) throws IOException, ParseException {
-        Client client = new Client("localhost", 6788, 6789);
+        TCPClient client = new TCPClient("localhost", 6788);
         client.start();
     }
 }
