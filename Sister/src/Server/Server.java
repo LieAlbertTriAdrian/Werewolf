@@ -15,6 +15,8 @@ import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.ListIterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.json.JSONObject;
@@ -217,6 +219,45 @@ public class Server {
             jsonResponse.put("status", status);
             jsonResponse.put("description", message);
         }         
+        return jsonResponse;
+    }
+    
+    public JSONObject clientAcceptedResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        String message;
+        ArrayList<ArrayList<Integer>> vote_result = new ArrayList<ArrayList<Integer>>();
+        ArrayList<Integer> votes = new ArrayList<Integer>();
+        
+        /* Error Handling */        
+        if (request.has("method")) {
+            status = "ok";
+            message = "thank you for your participation";
+            int kpuId = request.getInt("kpu_id");
+            int playerId, vote = 0;
+            int i = 0;
+            for (ArrayList<Integer> row : vote_result){
+                playerId = row.get(0);
+                vote = row.get(1);
+                if (playerId == kpuId){
+                    row.set(1, vote++);
+                } else {
+                    votes.add(kpuId);
+                    votes.add(vote++);
+                    vote_result.add(votes);
+                }
+            }
+            if (vote_result.size() == 0){
+                votes.add(kpuId);
+                votes.add(vote++);
+                vote_result.add(votes);
+            }
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
         return jsonResponse;
     }
 
