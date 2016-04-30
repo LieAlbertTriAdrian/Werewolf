@@ -3,9 +3,10 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package Testing;
 
-import TCP.TCPClient;
+
+import Config.Config;
+import Server.Server;
 import java.io.IOException;
 import org.json.simple.parser.ParseException;
 
@@ -13,9 +14,12 @@ import org.json.simple.parser.ParseException;
  *
  * @author alberttriadrian
  */
-public class TCPClientTesting {
+public class ServerTesting {
     public static void main(String args[]) throws IOException, ParseException {
-        TCPClient client = new TCPClient("localhost", 6788);
-        client.start();
+        Config config = new Config();
+        int serverPort = config.serverPort;
+        
+        Server server = new Server(serverPort);
+        server.start();
     }
 }

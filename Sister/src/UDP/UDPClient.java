@@ -90,7 +90,6 @@ public class UDPClient extends Thread{
 
                     String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
                     System.out.println("RECEIVED: " + sentence);
-
                 }     
            } 
         };
@@ -106,6 +105,7 @@ public class UDPClient extends Thread{
     
     public void run () {
         new Thread(receiver).start();
+        System.out.println("UDP Client");
 //        new Thread(sender).start();
     }
     
