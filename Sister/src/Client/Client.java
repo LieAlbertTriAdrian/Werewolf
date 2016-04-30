@@ -2,8 +2,6 @@
 package Client;
 
 import Sender.UnreliableSender;
-import TCP.TCPClient;
-import UDP.UDPClient;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -18,15 +16,11 @@ import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class Client {
-    private TCPClient tcpClient;
-    private UDPClient udpClient;
-    private InetAddress IPAddress;
-    private int port;
     private String role;
     private int isAlive;
     private int playerId;
@@ -94,23 +88,7 @@ public class Client {
             }
         }
     }
-    
-    public void startTCPClient(){
-        tcpClient.start();
-    }
-    
-    public void startUDPClient(){
-        udpClient.start();
-    }
-    
-    public TCPClient getTCPClient () {
-        return this.tcpClient;
-    }
-    
-    public UDPClient getUDPClient () {
-        return this.udpClient;
-    }
-    
+        
     public boolean getIsKPU () {
         return this.isKPU;
     }
@@ -160,7 +138,7 @@ public class Client {
                     index = udpTargetPort.size()-1;
                     receive();
                 } catch (IOException ex) {
-                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
+
                 }
             }
             public void receive() throws IOException{
@@ -200,10 +178,53 @@ public class Client {
         unreliableSender.send(sendPacket);        
     }
     
+    public void broadcastUdp (JSONObject request) throws IOException, ParseException {
+        JSONObject response = listClient();
+        ArrayList<JSONObject> clients = (ArrayList<JSONObject>) response.get("clients");
+        
+        for (JSONObject client: clients) {
+            UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+            int playerId = Integer.parseInt(client.get("player_id").toString());
+            sendUdp(request.toString(), udpTargetIPAddress.get(playerId), udpTargetPort.get(playerId), unreliableSender);
+        }        
+    }
+    
     public void closeUdp () {
         this.datagramSocket.close();
     }
 
+    public void paxosAcceptProposal (int proposalNumber, int playerId, int kpuId) throws IOException, ParseException {
+        JSONObject request = new JSONObject();
+        request.put("method", "accept_proposal");
+        int[] proposal_id = new int[2];
+        proposal_id[0] = proposalNumber;
+        proposal_id[1] = playerId;
+        request.put("proposal_id",proposal_id);
+        request.put("kpu_id", kpuId);
+        broadcastUdp(request);
+    }
+
+    public JSONObject PaxosAcceptProposalResponse (JSONObject request) {
+        JSONObject response = new JSONObject();
+        String status;
+        String message;
+        
+        if (request.has("method") && request.has("proposal_id") && request.has("kpu_id")) {
+            status = "ok";
+            message = "accepted";
+        } else {
+            status = "error";
+            message = "wrong request";            
+        }
+        response.put("status", status);
+        response.put("description", message);
+        return response;
+    }
+    
+    public void clientAcceptedProposal () {
+        
+    }
+    
     /****************  TCP Method   ****************/    
     public void callTcp (String method) throws IOException, ParseException {   
         if (method.equals("join")){
@@ -270,12 +291,12 @@ public class Client {
         System.out.println(jsonResponse);
     }
     
-    public void listClient() throws IOException, ParseException{
-        JSONObject jsonRequest = new JSONObject();
-        jsonRequest.put("method","client_address");
-        sendTcp(jsonRequest);
-        JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse);
+    public JSONObject listClient() throws IOException, ParseException{
+        JSONObject request = new JSONObject();
+        request.put("method","client_address");
+        sendTcp(request);
+        JSONObject response = receiveTcp();
+        return response;
     }
     
     public void getOther(String playerId) throws IOException, ParseException {
