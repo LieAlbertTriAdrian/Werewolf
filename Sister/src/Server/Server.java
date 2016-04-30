@@ -15,6 +15,8 @@ import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.logging.Level;
@@ -36,13 +38,20 @@ public class Server {
     private String round;
     private int day;
     private boolean isGameRunning;
+    private boolean isKPUElected;
+    private int kpuElected;
+    private ArrayList<Integer> kpuIds;
+    private ArrayList<Integer> votes;
 
     public Server (int port) throws IOException {
         this.listenPort = port;
         this.serverSocket = new ServerSocket(listenPort);
         this.Clients = new ArrayList<JSONObject>();
         this.isGameRunning = false;
+        this.isKPUElected = false;
         this.connectionSocket = new ArrayList<Socket>();
+        this.kpuIds = new ArrayList<Integer>();
+        this.votes = new ArrayList<Integer>();
         receiver = new Runnable() {
             int index;
             public void run(){
@@ -60,6 +69,7 @@ public class Server {
             }
             public void call() throws IOException, ParseException {
                 int i = this.index;
+                int counterClient = 0;
                 while(true) {             
                     System.out.println(i+": "+connectionSocket.get(i));
                     JSONObject jsonRequest = receive(i);
@@ -75,6 +85,15 @@ public class Server {
                         jsonResponse = readyUpResponse(jsonRequest);
                     else if (method.equals("client_address"))
                         jsonResponse = listClient(jsonRequest);
+                    else if (method.equals("accepted_proposal")){
+                        jsonResponse = clientAcceptedResponse(jsonRequest);
+                        counterClient++;
+                        if (counterClient >= Clients.size()-2)
+                            kpuElected = recapitulateVote();
+                            if (kpuElected != -1){
+                                isKPUElected = true;
+                            }
+                    }
                     else if (method.equals("get_other"))
                         jsonResponse = getClient(Integer.parseInt((String) jsonRequest.get("playerId")));
                     else {
@@ -226,32 +245,20 @@ public class Server {
         JSONObject jsonResponse = new JSONObject();        
         String status;
         String message;
-        ArrayList<ArrayList<Integer>> vote_result = new ArrayList<ArrayList<Integer>>();
-        ArrayList<Integer> votes = new ArrayList<Integer>();
-        
-        /* Error Handling */        
+        int playerId, vote = 0;
+                
         if (request.has("method")) {
-            status = "ok";
-            message = "thank you for your participation";
-            int kpuId = request.getInt("kpu_id");
-            int playerId, vote = 0;
-            int i = 0;
-            for (ArrayList<Integer> row : vote_result){
-                playerId = row.get(0);
-                vote = row.get(1);
-                if (playerId == kpuId){
-                    row.set(1, vote++);
-                } else {
-                    votes.add(kpuId);
-                    votes.add(vote++);
-                    vote_result.add(votes);
-                }
-            }
-            if (vote_result.size() == 0){
-                votes.add(kpuId);
+            int retrieveKpuId = request.getInt("kpu_id");
+            int occurences = Collections.frequency(kpuIds,retrieveKpuId);
+            if (occurences == 0){
+                kpuIds.add(retrieveKpuId);
                 votes.add(vote++);
-                vote_result.add(votes);
+            } else {
+                int indexKpuId = kpuIds.indexOf(retrieveKpuId);
+                votes.set(indexKpuId, vote++);
             }
+            status = "ok";
+            message = "we have received your vote";
         } else {
             status = "error";
             message = "wrong request";
@@ -270,6 +277,23 @@ public class Server {
             }
         }
         return false; 
+    }
+    
+    public int recapitulateVote(){
+        int occurences = Collections.frequency(votes, Collections.max(votes));
+        double totalCount = 0;
+        for (Integer count : votes){
+            totalCount += count;
+        }
+        if (totalCount % 2 == 0 && Collections.max(votes) == totalCount / 2){
+            
+        } else {
+            if (occurences >= (Math.ceil(totalCount / 2.0) + 1)){
+                int index = votes.indexOf(Collections.max(votes));
+                return kpuIds.get(index);
+            }
+        }
+        return -1;
     }
     
    public void startGame(int index) throws IOException{
@@ -298,6 +322,18 @@ public class Server {
        jsonRequest.put("method","game_over");
        jsonRequest.put("winner","werewolf");
        jsonRequest.put("description","PUT NARRATION HERE");
+       send(jsonRequest, index);
+       System.out.println(jsonRequest);
+   }
+   
+   public void kpuSelected(int index) throws IOException{
+       JSONObject jsonRequest = new JSONObject();
+       jsonRequest.put("method","kpu_selected");
+       if (isKPUElected){
+           jsonRequest.put("kpu_id", kpuElected);
+       } else {
+           jsonRequest.put("description", "kpu has not been elected");
+       }
        send(jsonRequest, index);
        System.out.println(jsonRequest);
    }
