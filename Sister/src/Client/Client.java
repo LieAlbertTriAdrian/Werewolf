@@ -59,7 +59,7 @@ public class Client {
     
     public void start() throws IOException, ParseException{
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-        startUDPClient();
+        //startUDPClient();
         while(true){
             String sentence = inFromUser.readLine();
             String[] words = sentence.split(" ");
@@ -196,7 +196,7 @@ public class Client {
     public void sendTcp (JSONObject jsonRequest) throws IOException {
         DataOutputStream outToServer = new DataOutputStream(this.tcpSocket.getOutputStream());   
         System.out.println(jsonRequest);
-        outToServer.writeBytes(jsonRequest.toString() + "\n");        
+        outToServer.writeBytes(jsonRequest.toString() + "\n");   
     }
     
     public JSONObject receiveTcp () throws IOException, ParseException {
@@ -220,8 +220,8 @@ public class Client {
 
         jsonRequest.put("method","join");
         jsonRequest.put("username", username);
-        jsonRequest.put("udp_address", this.IPAddress);
-        jsonRequest.put("udp_port", this.port);
+        jsonRequest.put("udp_address", this.udpIPAddress.getHostAddress());
+        jsonRequest.put("udp_port", this.udpPort);
                         
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
