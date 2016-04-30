@@ -25,8 +25,6 @@ public class Client {
     
     public void start() throws IOException, ParseException{
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-        System.out.println("Start Client");
-        startTCPClient();
         startUDPClient();
         while(true){
             String sentence = inFromUser.readLine();
