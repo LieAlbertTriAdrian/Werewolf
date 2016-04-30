@@ -9,6 +9,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.util.Scanner;
 import org.json.simple.JSONObject;
@@ -42,7 +43,10 @@ public class TCPClient extends Thread{
     
     public void call (String method) throws IOException, ParseException {   
         if (method.equals("join")){
-            joinGame();
+            Scanner input = new Scanner(System.in);
+            System.out.print("Enter your username : ");
+            String username = input.nextLine();
+            joinGame(username);
         } else if (method.equals("leave")){
             leaveGame();
         } else if (method.equals("ready")){
@@ -82,13 +86,8 @@ public class TCPClient extends Thread{
 //            System.out.println("FROM SERVER: " + modifiedSentence);   
 //            clientSocket.close();  
 //    } 
-    public void joinGame() throws IOException, ParseException{
+    public void joinGame(String username) throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
-        Scanner input = new Scanner(System.in);
-
-        System.out.print("Enter your username : ");
-        String username = input.nextLine();
-
         jsonRequest.put("method","join");
         jsonRequest.put("username", username);
         jsonRequest.put("udp_address", this.IPAddress);
@@ -118,6 +117,28 @@ public class TCPClient extends Thread{
     public void listClient() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","client_address");
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
+    
+    public void infoWerewolfKilled(int vote_status, int player_killed, Array vote_result) throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method", "vote_result_werewolf");
+        jsonRequest.put("vote_status", vote_status);
+        jsonRequest.put("player_killed", player_killed);
+        jsonRequest.put("vote_result", vote_result);
+        send(jsonRequest);
+        JSONObject jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
+    
+    public void infoCivilianKilled(int vote_status, int player_killed, Array vote_result) throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method", "vote_result_civilian");
+        jsonRequest.put("vote_status", vote_status);
+        jsonRequest.put("player_killed", player_killed);
+        jsonRequest.put("vote_result", vote_result);
         send(jsonRequest);
         JSONObject jsonResponse = receive();
         System.out.println(jsonResponse);

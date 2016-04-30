@@ -18,7 +18,9 @@ import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
 
 /**
  *
@@ -77,22 +79,20 @@ public class UDPClient extends Thread{
     }
     
     public void call (String sentence) throws IOException {
-        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+        killWerewolf();
         if (sentence.equals("quit"))
         {
             this.datagramSocket.close();
         }
-
-        this.send(sentence, targetIPAddress, targetPort, unreliableSender);
     }
     
-    public void send (String sentence, InetAddress targetAddress, int targetPort, UnreliableSender unreliableSender) throws IOException {
-        byte[] sendData = sentence.getBytes();
+    public void send (JSONObject jsonRequest, InetAddress targetAddress, int targetPort, UnreliableSender unreliableSender) throws IOException {
+        byte[] sendData = jsonRequest.toString().getBytes("UTF-8");
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, targetAddress, targetPort);
         unreliableSender.send(sendPacket);        
     }
     
-    public void receive () throws IOException {
+    public JSONObject receive () throws IOException, ParseException {
         DatagramSocket serverSocket = new DatagramSocket(port);
         byte[] receiveData = new byte[1024];
         
@@ -101,9 +101,13 @@ public class UDPClient extends Thread{
             serverSocket.receive(receivePacket);
 
             String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            System.out.println("RECEIVED: " + sentence);
-        
-        }       
+            JSONParser parser = new JSONParser();
+            Object obj = parser.parse(sentence);
+            JSONObject jsonResponse;
+            jsonResponse = new JSONObject(obj.toString());
+            
+            return jsonResponse;
+        }
     }
     
     public void close () {
@@ -144,5 +148,27 @@ public class UDPClient extends Thread{
 //        }
 //        datagramSocket.close();
 //    }
+    public void killWerewolf(int player_id) throws IOException, ParseException{
+        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method", "vote_werewolf");
+        jsonRequest.put("player_id", player_id);
+        send(jsonRequest, targetIPAddress, targetPort, unreliableSender);
+        System.out.println(jsonRequest);
+        JSONObject jsonResponse = new JSONObject();
+        jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
     
+    public void killCivilian(int player_id) throws IOException, ParseException{
+        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method", "vote_civilian");
+        jsonRequest.put("player_id", player_id);
+        send(jsonRequest, targetIPAddress, targetPort, unreliableSender);
+        System.out.println(jsonRequest);
+        JSONObject jsonResponse = new JSONObject();
+        jsonResponse = receive();
+        System.out.println(jsonResponse);
+    }
 }
