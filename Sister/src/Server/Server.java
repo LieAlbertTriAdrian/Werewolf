@@ -28,21 +28,27 @@ import org.json.simple.parser.ParseException;
 public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
-    private Socket connectionSocket;
+    private ArrayList<Socket> connectionSocket;
     private ArrayList<JSONObject> Clients;
     private Runnable receiver;
     private String round;
     private int day;
     private boolean isGameRunning;
-    
+
     public Server (int port) throws IOException {
         this.listenPort = port;
         this.serverSocket = new ServerSocket(listenPort);
         this.Clients = new ArrayList<JSONObject>();
         this.isGameRunning = false;
+        this.connectionSocket = new ArrayList<Socket>();
         receiver = new Runnable() {
+            int index;
             public void run(){
                 try {
+//                    s = serverSocket.accept();
+//                    System.out.println(s);
+                    index = connectionSocket.size()-1;
+                    System.out.println("Thread baru!"+index);
                     call();
                 } catch (IOException ex) {
                     Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
@@ -51,8 +57,10 @@ public class Server {
                 }
             }
             public void call() throws IOException, ParseException {
+                int i = this.index;
                 while(true) {             
-                    JSONObject jsonRequest = receive();
+                    System.out.println(i+": "+connectionSocket.get(i));
+                    JSONObject jsonRequest = receive(i);
                     JSONObject jsonResponse = new JSONObject();
                     System.out.println(jsonRequest);
                     String method = (String) jsonRequest.get("method");
@@ -70,7 +78,7 @@ public class Server {
                     else {
                         jsonResponse.put("status", "wrong request");
                     }
-                    send(jsonResponse);
+                    send(jsonResponse,i);
                 }
             }
         };
@@ -84,21 +92,26 @@ public class Server {
         Clients.add(client);
     }
     
-    public void start () throws IOException{
+    public void startServer () throws IOException{
         while(true){
-            connectionSocket = serverSocket.accept();
+            Socket s = serverSocket.accept();
+            connectionSocket.add(s);
             new Thread(receiver).start();
         }
     }
+    
+    public void stopServer () throws IOException {
+        serverSocket.close();
+    }
 
-    public void send (JSONObject jsonResponse) throws IOException {
-        DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());             
+    public void send (JSONObject jsonResponse, int index) throws IOException {
+        DataOutputStream outToClient = new DataOutputStream(connectionSocket.get(index).getOutputStream());             
         outToClient.writeBytes(jsonResponse.toString() + "\n");
     }
     
-    public JSONObject receive () throws IOException, ParseException {
+    public JSONObject receive (int index) throws IOException, ParseException {
         System.out.println("Masuk Receive");
-        BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
+        BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.get(index).getInputStream()));
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromClient.readLine());
         JSONObject jsonRequest = new JSONObject(obj.toString());
@@ -129,9 +142,18 @@ public class Server {
                 jsonResponse.put("description", message);
             } else {
                 status = "ok";            
+                int playerId = this.getClients().size();
                 jsonResponse.put("status", status);
-                jsonResponse.put("player_id", this.getClients().size());
-                addClient(request);
+                jsonResponse.put("player_id", playerId);
+                
+                JSONObject newClient = new JSONObject();
+                newClient.put("player_id", playerId);
+                newClient.put("is_alive", 1);
+                newClient.put("address", request.get("udp_address"));
+                newClient.put("port", request.get("udp_port"));
+                newClient.put("username", request.get("username"));
+         
+                addClient(newClient);
             }
         } else {
             status = "error";
@@ -209,33 +231,33 @@ public class Server {
         return false; 
     }
     
-   public void startGame() throws IOException{
+   public void startGame(int index) throws IOException{
        JSONObject jsonRequest = new JSONObject();
        jsonRequest.put("method","start");
        jsonRequest.put("time","day");
        jsonRequest.put("role","werewolf");
        jsonRequest.put("friend","ahmad, dariel");
        jsonRequest.put("description","game is started");
-       send(jsonRequest);
+       send(jsonRequest, index);
        System.out.println(jsonRequest);
    }
    
-   public void changePhase() throws IOException{
+   public void changePhase(int index) throws IOException{
        JSONObject jsonRequest = new JSONObject();
        jsonRequest.put("method","change_phase");
        jsonRequest.put("time","day");
        jsonRequest.put("days","3");       
        jsonRequest.put("description","PUT NARRATION HERE");
-       send(jsonRequest);
+       send(jsonRequest, index);
        System.out.println(jsonRequest);
    }
    
-   public void gameOver() throws IOException{
+   public void gameOver(int index) throws IOException{
        JSONObject jsonRequest = new JSONObject();
        jsonRequest.put("method","game_over");
        jsonRequest.put("winner","werewolf");
        jsonRequest.put("description","PUT NARRATION HERE");
-       send(jsonRequest);
+       send(jsonRequest, index);
        System.out.println(jsonRequest);
    }
     
