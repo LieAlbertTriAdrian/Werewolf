@@ -94,37 +94,46 @@ public class TCPClient extends Thread{
 //    } 
     public void joinGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
-        jsonRequest.put("method","join");
         Scanner input = new Scanner(System.in);
+
         System.out.print("Enter your username : ");
         String username = input.nextLine();
+        
+        jsonRequest.put("method","join");
         jsonRequest.put("username", username);
-        send(jsonRequest);
+        this.send(jsonRequest);
+        
         JSONObject jsonResponse = receive();
         System.out.println(jsonResponse);
     }
     
     public void leaveGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
+
         jsonRequest.put("method","leave");
         this.send(jsonRequest);
+        
         JSONObject jsonResponse = this.receive();
         System.out.println(jsonResponse.toString());
     }
     
     public void readyUp() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
+        
         jsonRequest.put("method","ready");
-        send(jsonRequest);
-        JSONObject jsonResponse = receive();
+        this.send(jsonRequest);
+        
+        JSONObject jsonResponse = this.receive();
         System.out.println(jsonResponse);
     }
     
     public void listClient() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
+        
         jsonRequest.put("method","client_address");
-        send(jsonRequest);
-        JSONObject jsonResponse = receive();
+        this.send(jsonRequest);
+        
+        JSONObject jsonResponse = this.receive();
         System.out.println(jsonResponse);
     }
 }
