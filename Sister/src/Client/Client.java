@@ -7,6 +7,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.util.ArrayList;
+import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 
 public class Client {
@@ -17,6 +19,7 @@ public class Client {
     private String role;
     private int isAlive;
     private int playerId;
+    private boolean isProposer;
     
     public Client (String IPAddress, int port, int serverPort) throws IOException {
         this.tcpClient = new TCPClient(IPAddress,serverPort);

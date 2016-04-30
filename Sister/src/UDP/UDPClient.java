@@ -15,8 +15,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import org.json.simple.JSONObject;
 
 /**
  *
@@ -29,7 +31,7 @@ public class UDPClient extends Thread{
     private int targetPort;
     private DatagramSocket datagramSocket;
     private Runnable sender;
-    private Runnable receiver;
+    public String method;
     
     public UDPClient (String _IPAddress, int _port) throws UnknownHostException, SocketException {
         this.port = _port;
@@ -37,27 +39,6 @@ public class UDPClient extends Thread{
         this.targetPort = _port;
         this.targetIPAddress = InetAddress.getByName(_IPAddress);
         this.datagramSocket = new DatagramSocket();
-        receiver = new Runnable(){
-            public void run(){
-                try {
-                    receive();
-                } catch (IOException ex) {
-                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
-            public void receive() throws IOException{
-               DatagramSocket serverSocket = new DatagramSocket(port);
-                byte[] receiveData = new byte[1024];
-
-                while (true) {
-                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                    serverSocket.receive(receivePacket);
-
-                    String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                    System.out.println("RECEIVED: " + sentence);
-                }     
-           } 
-        };
     }
     
     public void setTargetIPAddress (String _IPAddress) throws UnknownHostException {
@@ -68,7 +49,30 @@ public class UDPClient extends Thread{
         this.targetPort = _port;
     }
     
-    public void run () {
+    public void addReceiver (String _IPAdress, final int _port) {
+        Runnable receiver = new Runnable(){
+            public void run(){
+                try {
+                    receive(_port);
+                } catch (IOException ex) {
+                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            public void receive(int _port) throws IOException{
+                DatagramSocket serverSocket = new DatagramSocket(_port);
+                byte[] receiveData = new byte[1024];
+
+                while (true) {
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    serverSocket.receive(receivePacket);
+
+                    String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    System.out.println("RECEIVED: " + sentence);
+                    //parsemessage
+                    //ngerubah variabel global
+                }     
+           } 
+        };
         new Thread(receiver).start();
     }
     
@@ -105,6 +109,15 @@ public class UDPClient extends Thread{
     public void close () {
         this.datagramSocket.close();
     }
+    
+//    public void propose(){
+//        kpuID = (kpuID + 1) % 6;
+//        int[] proposalID = {proposalNumber,kpuID};
+//        JSONObject jsonRequest = new JSONObject();
+//        jsonRequest.put("method","prepare_proposal");
+//        jsonRequest.put("proposal_id",proposalID);
+//        udpClient.call
+//    }
 
 //    public static void main(String args[]) throws Exception
 //    {
