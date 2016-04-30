@@ -15,6 +15,8 @@ import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -28,48 +30,63 @@ public class Server {
     private ServerSocket serverSocket;
     private Socket connectionSocket;
     private ArrayList<Client> Clients;
+    private Runnable receiver;
     
     public Server (int port) throws IOException {
         this.listenPort = port;
         this.serverSocket = new ServerSocket(listenPort);
         this.Clients = new ArrayList<Client>();
+        receiver = new Runnable() {
+            public void run(){
+                try {
+                    call();
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (ParseException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            public void call() throws IOException, ParseException {
+                while(true) {             
+                    JSONObject jsonRequest = receive();
+                    JSONObject jsonResponse = new JSONObject();
+                    System.out.println(jsonRequest);
+                    String method = (String) jsonRequest.get("method");
+                    System.out.println("Method : " + method);
+                    if (method.equals("join")){
+                        String username = (String) jsonRequest.get("username");
+                        jsonResponse.put("status","ok");
+                        jsonResponse.put("player_id","3");
+                    } else if(method.equals("leave")){
+                        jsonResponse.put("status", "ok");
+                    } else if (method.equals("ready")){
+                        jsonResponse.put("status","ok");
+                        jsonResponse.put("description","waiting for other player to start");
+                    } else if (method.equals("client_address")){
+                        JSONObject clients = new JSONObject();
+                        clients.put("player_id","0");
+                        clients.put("is_alive","1");
+                        clients.put("address","192.168.1.1");
+                        clients.put("port","9999");
+                        clients.put("username","sister");
+                        jsonResponse.put("status","ok");
+                        jsonResponse.put("clients",clients);
+                    } else {
+                        jsonResponse.put("status", "wrong request");
+                    }
+                    send(jsonResponse);
+                }
+            }
+        };
     }
 
     public void addClient (Client client) {
         Clients.add(client);
     }
     
-    public void start () throws IOException, ParseException {
+    public void start () throws IOException{
         connectionSocket = serverSocket.accept();
-        while(true) {             
-            JSONObject jsonRequest = this.receive();
-            JSONObject jsonResponse = new JSONObject();
-            System.out.println(jsonRequest);
-            String method = (String) jsonRequest.get("method");
-            System.out.println("Method : " + method);
-            if (method.equals("join")){
-                String username = (String) jsonRequest.get("username");
-                jsonResponse.put("status","ok");
-                jsonResponse.put("player_id","3");
-            } else if(method.equals("leave")){
-                jsonResponse.put("status", "ok");
-            } else if (method.equals("ready")){
-                jsonResponse.put("status","ok");
-                jsonResponse.put("description","waiting for other player to start");
-            } else if (method.equals("client_address")){
-                JSONObject clients = new JSONObject();
-                clients.put("player_id","0");
-                clients.put("is_alive","1");
-                clients.put("address","192.168.1.1");
-                clients.put("port","9999");
-                clients.put("username","sister");
-                jsonResponse.put("status","ok");
-                jsonResponse.put("clients",clients);
-            } else {
-                jsonResponse.put("status", "wrong request");
-            }
-            this.send(jsonResponse);
-        }
+        new Thread(receiver).start();
     }
 
     public void send (JSONObject jsonResponse) throws IOException {
