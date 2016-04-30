@@ -23,7 +23,7 @@ public class ClientTesting {
         Scanner sc = new Scanner(System.in);
         int clientPort = sc.nextInt();
         
-        Client client = new Client("localhost", clientPort, "localhost", serverPort);
+        Client client = new Client("localhost", clientPort,"localhost", serverPort);
         client.start();
     }
 }

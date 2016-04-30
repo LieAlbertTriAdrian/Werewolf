@@ -20,6 +20,6 @@ public class ServerTesting {
         int serverPort = config.serverPort;
         
         Server server = new Server(serverPort);
-        server.start();
+        server.startServer();
     }
 }
