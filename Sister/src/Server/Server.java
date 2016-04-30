@@ -90,4 +90,34 @@ public class Server {
         return this.Clients;
     }
     
+   public void startGame() throws IOException{
+       JSONObject jsonRequest = new JSONObject();
+       jsonRequest.put("method","start");
+       jsonRequest.put("time","day");
+       jsonRequest.put("role","werewolf");
+       jsonRequest.put("friend","ahmad, dariel");
+       jsonRequest.put("description","game is started");
+       send(jsonRequest);
+       System.out.println(jsonRequest);
+   }
+   
+   public void changePhase() throws IOException{
+       JSONObject jsonRequest = new JSONObject();
+       jsonRequest.put("method","change_phase");
+       jsonRequest.put("time","day");
+       jsonRequest.put("days","3");       
+       jsonRequest.put("description","PUT NARRATION HERE");
+       send(jsonRequest);
+       System.out.println(jsonRequest);
+   }
+   
+   public void gameOver() throws IOException{
+       JSONObject jsonRequest = new JSONObject();
+       jsonRequest.put("method","game_over");
+       jsonRequest.put("winner","werewolf");
+       jsonRequest.put("description","PUT NARRATION HERE");
+       send(jsonRequest);
+       System.out.println(jsonRequest);
+   }
+    
 }
