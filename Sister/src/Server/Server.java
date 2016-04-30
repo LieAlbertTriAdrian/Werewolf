@@ -32,8 +32,8 @@ public class Server {
     }
     
     public void start () throws IOException, ParseException {
+        connectionSocket = serverSocket.accept();
         while(true) {             
-            connectionSocket = serverSocket.accept();
             JSONObject jsonRequest = receive();
             JSONObject jsonResponse = new JSONObject();
             System.out.println(jsonRequest);
