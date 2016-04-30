@@ -63,22 +63,21 @@ public class Server {
                         jsonResponse = leaveGameResponse(jsonRequest);
                     else if (method.equals("ready"))
                         jsonResponse = readyUpResponse(jsonRequest);
-                    else if (method.equals("client_address")){
-                        JSONObject clients = new JSONObject();
-                        clients.put("player_id","0");
-                        clients.put("is_alive","1");
-                        clients.put("address","192.168.1.1");
-                        clients.put("port","9999");
-                        clients.put("username","sister");
-                        jsonResponse.put("status","ok");
-                        jsonResponse.put("clients",clients);
-                    } else {
+                    else if (method.equals("client_address"))
+                        jsonResponse = listClient(jsonRequest);
+                    else if (method.equals("get_other"))
+                        jsonResponse = getClient(Integer.parseInt((String) jsonRequest.get("playerId")));
+                    else {
                         jsonResponse.put("status", "wrong request");
                     }
                     send(jsonResponse);
                 }
             }
         };
+    }
+    
+    public JSONObject getClient(int playerId){
+        return Clients.get(playerId);
     }
 
     public void addClient (JSONObject client) {
@@ -100,7 +99,7 @@ public class Server {
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromClient.readLine());
-        JSONObject jsonRequest = (JSONObject) obj;
+        JSONObject jsonRequest = new JSONObject(obj.toString());
         return jsonRequest;
     }
     
@@ -184,13 +183,16 @@ public class Server {
         /* Error Handling */        
         if (request.has("method")) {
             status = "ok";
-            message = "waiting for other player to start";
+            message = "list of clients retrieved";
+            jsonResponse.put("status", status);          
+            jsonResponse.put("clients", this.Clients);
+            jsonResponse.put("description", message);
         } else {
             status = "error";
             message = "wrong request";
-        }
-        jsonResponse.put("status", status);            
-        jsonResponse.put("description", message);            
+            jsonResponse.put("status", status);
+            jsonResponse.put("description", message);
+        }         
         return jsonResponse;
     }
 
