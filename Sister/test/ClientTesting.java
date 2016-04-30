@@ -15,15 +15,15 @@ import org.json.simple.parser.ParseException;
  * @author alberttriadrian
  */
 public class ClientTesting {
-//    public static void main(String args[]) throws IOException, ParseException {
-//        Config config = new Config();
-//        int serverPort = config.serverPort;
-//        
-//        System.out.println("Enter your port: ");
-//        Scanner sc = new Scanner(System.in);
-//        int clientPort = sc.nextInt();
-//        
-//        Client client = new Client("localhost", clientPort, serverPort);
-//        client.start();
-//    }
+    public static void main(String args[]) throws IOException, ParseException {
+        Config config = new Config();
+        int serverPort = config.serverPort;
+        
+        System.out.println("Enter your port: ");
+        Scanner sc = new Scanner(System.in);
+        int clientPort = sc.nextInt();
+        
+        Client client = new Client("localhost", clientPort,"localhost", serverPort);
+        client.start();
+    }
 }

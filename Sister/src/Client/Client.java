@@ -67,9 +67,9 @@ public class Client {
                 sentence = sentence.substring(words[0].length()+1);
                 if(!sentence.equals("")){
                     if(words[0].equals("toOthers")){
-                        udpClient.call(sentence);
+                        callUdp(sentence);
                     }else if(words[0].equals("toServer")){
-                        tcpClient.call(sentence);
+                        callTcp(sentence);
                     }
                 }
             }
