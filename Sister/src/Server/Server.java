@@ -85,8 +85,10 @@ public class Server {
     }
     
     public void start () throws IOException{
-        connectionSocket = serverSocket.accept();
-        new Thread(receiver).start();
+        while(true){
+            connectionSocket = serverSocket.accept();
+            new Thread(receiver).start();
+        }
     }
 
     public void send (JSONObject jsonResponse) throws IOException {
