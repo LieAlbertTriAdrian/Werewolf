@@ -8,6 +8,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import static java.lang.Thread.sleep;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -35,8 +36,8 @@ public class Client {
     /* UDP */
     private InetAddress udpIPAddress;
     private int udpPort;
-    private InetAddress udpTargetIPAddress;
-    private int udpTargetPort;
+    private ArrayList<InetAddress> udpTargetIPAddress;
+    private ArrayList<Integer> udpTargetPort;
     private DatagramSocket datagramSocket;
     private Runnable udpSender;
             
@@ -44,7 +45,8 @@ public class Client {
     private String tcpIPAddress;
     private int tcpPort;
     private Socket tcpSocket;
-
+    private int others;
+    private Runnable otherClientsChecker;
    
     public Client (String udpIPAddress, int udpPort, String tcpIPAddress,int tcpPort) throws IOException {
 //        this.tcpClient = new TCPClient(IPAddress,serverPort);
@@ -54,7 +56,23 @@ public class Client {
         this.tcpPort = tcpPort;
         this.tcpIPAddress = tcpIPAddress;
         this.tcpSocket = new Socket(tcpIPAddress, tcpPort);
-
+        this.datagramSocket = new DatagramSocket();
+        this.udpTargetIPAddress = new ArrayList<InetAddress>();
+        this.udpTargetPort = new ArrayList<Integer>();
+        otherClientsChecker = new Runnable(){
+            public void run(){
+                try {
+                    checkOtherClients();
+                } catch (IOException ex) {
+                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (ParseException ex) {
+                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+        };
+        new Thread(otherClientsChecker).start();
     }
     
     public void start() throws IOException, ParseException{
@@ -67,7 +85,8 @@ public class Client {
                 sentence = sentence.substring(words[0].length()+1);
                 if(!sentence.equals("")){
                     if(words[0].equals("toOthers")){
-                        callUdp(sentence);
+                        sentence = sentence.substring(words[1].length()+1);
+                        callUdp(sentence,Integer.parseInt(words[1]));
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
                     }
@@ -108,26 +127,42 @@ public class Client {
         this.isAlive = _isAlive;
     }
     
-    /****************  UDP Method   ****************/
-    public void setUdpTargetIPAddress (String IPAddress) throws UnknownHostException {
-        this.udpTargetIPAddress = InetAddress.getByName(IPAddress);
+    public void checkOtherClients() throws IOException, ParseException, InterruptedException {
+        JSONObject jsonResponse;
+        //get other client//
+        addReceiver();
+        do{
+            JSONObject jsonRequest = new JSONObject();
+            jsonRequest.put("method","client_address");
+            sendTcp(jsonRequest);
+            jsonResponse = receiveTcp();
+            ArrayList<JSONObject> jr = (ArrayList) jsonResponse.get("clients");
+            if(jr.size() > udpTargetIPAddress.size()){
+                int i = jr.size() - 1;
+                udpTargetIPAddress.add(InetAddress.getByName(jr.get(i).get("address").toString()));
+                udpTargetPort.add(Integer.parseInt(jr.get(i).get("port").toString()));
+            }
+            sleep(1000);
+        }while(true);
     }
     
-    public void setUdpTargetPort (int port) {
-        this.udpTargetPort = port;
-    }
-    
-    public void addReceiver (String _IPAdress, final int _port) {
+    /****************  UDP Method   ****************/    
+    public void addReceiver () {
         Runnable receiver = new Runnable(){
+            int index;
             public void run(){
                 try {
-                    receive(_port);
+                    index = udpTargetPort.size()-1;
+                    receive();
                 } catch (IOException ex) {
                     Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            public void receive(int _port) throws IOException{
-                DatagramSocket serverSocket = new DatagramSocket(_port);
+            public void receive() throws IOException{
+                int i = index;
+                System.out.println(i);
+                System.out.println(udpPort);
+                DatagramSocket serverSocket = new DatagramSocket(udpPort);
                 byte[] receiveData = new byte[1024];
 
                 while (true) {
@@ -144,34 +179,20 @@ public class Client {
         new Thread(receiver).start();
     }
     
-    public void callUdp (String sentence) throws IOException {
+    public void callUdp (String sentence, int playerId) throws IOException {
         UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
         if (sentence.equals("quit"))
         {
             this.datagramSocket.close();
         }
-
-        this.sendUdp(sentence, udpTargetIPAddress, udpTargetPort, unreliableSender);
+        System.out.println(playerId+" "+udpTargetIPAddress.get(playerId)+" "+udpTargetPort.get(playerId));
+        this.sendUdp(sentence, udpTargetIPAddress.get(playerId), udpTargetPort.get(playerId), unreliableSender);
     }
     
     public void sendUdp (String sentence, InetAddress targetAddress, int targetPort, UnreliableSender unreliableSender) throws IOException {
         byte[] sendData = sentence.getBytes();
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, targetAddress, targetPort);
         unreliableSender.send(sendPacket);        
-    }
-    
-    public void receiveUdp () throws IOException {
-        DatagramSocket serverSocket = new DatagramSocket(port);
-        byte[] receiveData = new byte[1024];
-        
-        while (true) {
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            serverSocket.receive(receivePacket);
-
-            String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-            System.out.println("RECEIVED: " + sentence);
-        
-        }       
     }
     
     public void closeUdp () {
@@ -195,7 +216,7 @@ public class Client {
     
     public void sendTcp (JSONObject jsonRequest) throws IOException {
         DataOutputStream outToServer = new DataOutputStream(this.tcpSocket.getOutputStream());   
-        System.out.println(jsonRequest);
+//        System.out.println(jsonRequest);
         outToServer.writeBytes(jsonRequest.toString() + "\n");   
     }
     
