@@ -10,6 +10,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.Scanner;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -19,7 +21,7 @@ import org.json.simple.parser.ParseException;
  *
  * @author alberttriadrian
  */
-public class TCPClient {
+public class TCPClient extends Thread{
     private String IPAddress;
     private int port;
     private Socket socket;
@@ -30,21 +32,36 @@ public class TCPClient {
         this.socket = new Socket(this.IPAddress, this.port); 
     }
     
-    public void start () throws IOException, ParseException {   
-        while (true){
-            Scanner input = new Scanner(System.in);
-            System.out.print("Method : ");
-            String method = input.nextLine();
-            if (method.equals("join")){
-                joinGame();
-            } else if (method.equals("leave")){
-                leaveGame();
-            } else if (method.equals("ready")){
-                readyUp();
-            } else if (method.equals("client_address")){
-                listClient();
-            }
-        }
+    public void run () {
+//        try {
+//            call();
+//        } catch (IOException ex) {
+//            Logger.getLogger(TCPClient.class.getName()).log(Level.SEVERE, null, ex);
+//        } catch (ParseException ex) {
+//            Logger.getLogger(TCPClient.class.getName()).log(Level.SEVERE, null, ex);
+//        }
+    }
+    
+    public void call (String method) throws IOException, ParseException {   
+//        while (true){
+//            Scanner input = new Scanner(System.in);
+//            //System.out.print("Method : ");
+//            String method = input.nextLine();
+//            String target = method.split(" ")[0];
+//            System.out.println(target);
+//            if (target.equals("toServer")){
+//                String command = method.split(" ")[1];
+                if (method.equals("join")){
+                    joinGame();
+                } else if (method.equals("leave")){
+                    leaveGame();
+                } else if (method.equals("ready")){
+                    readyUp();
+                } else if (method.equals("client_address")){
+                    listClient();
+                }
+//            }
+//        }
     }
     
     public void send (JSONObject jsonRequest) throws IOException {

@@ -16,6 +16,5 @@ import java.net.UnknownHostException;
 public class UDPClientReceiveTesting {
     public static void main (String[] args) throws UnknownHostException, IOException {
         UDPClient client = new UDPClient("localhost", 9876);
-        client.receive(9876);
     }
 }

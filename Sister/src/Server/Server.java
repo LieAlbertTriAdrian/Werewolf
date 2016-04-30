@@ -5,6 +5,7 @@
  */
 package Server;
 
+import Client.Client;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.ArrayList;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -25,19 +27,26 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
+    private ArrayList<Client> Clients;
     
     public Server (int port) throws IOException {
         this.listenPort = port;
-        serverSocket = new ServerSocket(listenPort);
+        this.serverSocket = new ServerSocket(listenPort);
+        this.Clients = new ArrayList<Client>();
+    }
+
+    public void addClient (Client client) {
+        Clients.add(client);
     }
     
     public void start () throws IOException, ParseException {
         connectionSocket = serverSocket.accept();
         while(true) {             
-            JSONObject jsonRequest = receive();
+            JSONObject jsonRequest = this.receive();
             JSONObject jsonResponse = new JSONObject();
             System.out.println(jsonRequest);
             String method = (String) jsonRequest.get("method");
+            System.out.println("Method : " + method);
             if (method.equals("join")){
                 String username = (String) jsonRequest.get("username");
                 jsonResponse.put("status","ok");
@@ -69,10 +78,16 @@ public class Server {
     }
     
     public JSONObject receive () throws IOException, ParseException {
+        System.out.println("Masuk Receive");
         BufferedReader inFromClient =  new BufferedReader(new InputStreamReader(this.connectionSocket.getInputStream()));
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromClient.readLine());
         JSONObject jsonRequest = (JSONObject) obj;
         return jsonRequest;
     }
+    
+    public ArrayList<Client> getClients () {
+        return this.Clients;
+    }
+    
 }

@@ -14,7 +14,7 @@ import org.json.simple.parser.ParseException;
  */
 public class ClientTesting {
     public static void main(String args[]) throws IOException, ParseException {
-        Client client = new Client("localhost", 6789);
-        client.getTCPClient().start();
+        Client client = new Client("localhost", 6788, 6789);
+        client.start();
     }
 }
