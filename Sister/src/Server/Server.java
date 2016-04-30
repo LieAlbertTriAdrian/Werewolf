@@ -17,7 +17,7 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.simple.JSONObject;
+import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
@@ -29,13 +29,17 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private Socket connectionSocket;
-    private ArrayList<Client> Clients;
+    private ArrayList<JSONObject> Clients;
     private Runnable receiver;
+    private String round;
+    private int day;
+    private boolean isGameRunning;
     
     public Server (int port) throws IOException {
         this.listenPort = port;
         this.serverSocket = new ServerSocket(listenPort);
-        this.Clients = new ArrayList<Client>();
+        this.Clients = new ArrayList<JSONObject>();
+        this.isGameRunning = false;
         receiver = new Runnable() {
             public void run(){
                 try {
@@ -53,16 +57,13 @@ public class Server {
                     System.out.println(jsonRequest);
                     String method = (String) jsonRequest.get("method");
                     System.out.println("Method : " + method);
-                    if (method.equals("join")){
-                        String username = (String) jsonRequest.get("username");
-                        jsonResponse.put("status","ok");
-                        jsonResponse.put("player_id","3");
-                    } else if(method.equals("leave")){
-                        jsonResponse.put("status", "ok");
-                    } else if (method.equals("ready")){
-                        jsonResponse.put("status","ok");
-                        jsonResponse.put("description","waiting for other player to start");
-                    } else if (method.equals("client_address")){
+                    if (method.equals("join"))
+                        jsonResponse = joinGameResponse(jsonRequest);
+                    else if(method.equals("leave"))
+                        jsonResponse = leaveGameResponse(jsonRequest);
+                    else if (method.equals("ready"))
+                        jsonResponse = readyUpResponse(jsonRequest);
+                    else if (method.equals("client_address")){
                         JSONObject clients = new JSONObject();
                         clients.put("player_id","0");
                         clients.put("is_alive","1");
@@ -80,7 +81,7 @@ public class Server {
         };
     }
 
-    public void addClient (Client client) {
+    public void addClient (JSONObject client) {
         Clients.add(client);
     }
     
@@ -103,8 +104,105 @@ public class Server {
         return jsonRequest;
     }
     
-    public ArrayList<Client> getClients () {
+    public ArrayList<JSONObject> getClients () {
         return this.Clients;
+    }
+
+    /******************** Protocol Function ********************/
+    public JSONObject joinGameResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        
+        /* Error Handling */        
+        if (request.has("username") && request.has("method") && request.has("udp_address") && request.has("udp_port")) {
+            /* Failure Handling */            
+            if ( isUsernameExist(request.get("username").toString()) ) {
+                status = "fail";
+                String message = "user exists";
+                jsonResponse.put("status", status);
+                jsonResponse.put("description", message);
+            } else if ( this.isGameRunning ) {
+                status = "fail";
+                String message = "please wait, game is currently running";
+                jsonResponse.put("status", status);
+                jsonResponse.put("description", message);
+            } else {
+                status = "ok";            
+                jsonResponse.put("status", status);
+                jsonResponse.put("player_id", this.getClients().size());
+                addClient(request);
+            }
+        } else {
+            status = "error";
+            String message = "wrong request";
+            jsonResponse.put("status", status);
+            jsonResponse.put("description", message);
+        }
+        return jsonResponse;
+    }
+
+    public JSONObject leaveGameResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        
+        /* Error Handling */        
+        if (request.has("method")) {
+            status = "ok";
+            jsonResponse.put("status", status);            
+        } else {
+            status = "error";
+            String message = "wrong request";
+            jsonResponse.put("status", status);
+            jsonResponse.put("description", message);
+        }
+        return jsonResponse;
+    }
+
+    public JSONObject readyUpResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        String message;
+        
+        /* Error Handling */        
+        if (request.has("method")) {
+            status = "ok";
+            message = "waiting for other player to start";
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
+        return jsonResponse;
+    }
+    
+    public JSONObject listClient (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        String message;
+        
+        /* Error Handling */        
+        if (request.has("method")) {
+            status = "ok";
+            message = "waiting for other player to start";
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
+        return jsonResponse;
+    }
+
+
+    /******************** Checking Function ********************/
+    public boolean isUsernameExist (String username) {
+        for (JSONObject Client: Clients) {
+            if (Client.get("username").equals(username)) {
+                return true;
+            }
+        }
+        return false; 
     }
     
 }
