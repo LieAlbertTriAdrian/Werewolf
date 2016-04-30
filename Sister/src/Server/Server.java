@@ -34,7 +34,7 @@ public class Server {
     private String round;
     private int day;
     private boolean isGameRunning;
-    
+
     public Server (int port) throws IOException {
         this.listenPort = port;
         this.serverSocket = new ServerSocket(listenPort);
@@ -84,9 +84,13 @@ public class Server {
         Clients.add(client);
     }
     
-    public void start () throws IOException{
+    public void startServer () throws IOException{
         connectionSocket = serverSocket.accept();
         new Thread(receiver).start();
+    }
+    
+    public void stopServer () throws IOException {
+        serverSocket.close();
     }
 
     public void send (JSONObject jsonResponse) throws IOException {
@@ -127,9 +131,18 @@ public class Server {
                 jsonResponse.put("description", message);
             } else {
                 status = "ok";            
+                int playerId = this.getClients().size();
                 jsonResponse.put("status", status);
-                jsonResponse.put("player_id", this.getClients().size());
-                addClient(request);
+                jsonResponse.put("player_id", playerId);
+                
+                JSONObject newClient = new JSONObject();
+                newClient.put("player_id", playerId);
+                newClient.put("is_alive", 1);
+                newClient.put("address", request.get("udp_address"));
+                newClient.put("port", request.get("udp_port"));
+                newClient.put("username", request.get("username"));
+         
+                addClient(newClient);
             }
         } else {
             status = "error";
