@@ -20,6 +20,7 @@ public class Client {
     private int isAlive;
     private int playerId;
     private boolean isProposer;
+    private boolean isKPU;
     
     public Client (String IPAddress, int port, int serverPort) throws IOException {
         this.tcpClient = new TCPClient(IPAddress,serverPort);
@@ -59,6 +60,10 @@ public class Client {
     
     public UDPClient getUDPClient () {
         return this.udpClient;
+    }
+    
+    public boolean getIsKPU () {
+        return this.isKPU;
     }
     
     public int getIsAlive () {

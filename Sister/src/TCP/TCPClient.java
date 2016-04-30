@@ -84,11 +84,16 @@ public class TCPClient extends Thread{
 //    } 
     public void joinGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
-        jsonRequest.put("method","join");
         Scanner input = new Scanner(System.in);
+
         System.out.print("Enter your username : ");
         String username = input.nextLine();
+
+        jsonRequest.put("method","join");
         jsonRequest.put("username", username);
+        jsonRequest.put("udp_address", this.IPAddress);
+        jsonRequest.put("udp_port", this.port);
+                        
         send(jsonRequest);
         JSONObject jsonResponse = receive();
         System.out.println(jsonResponse);
