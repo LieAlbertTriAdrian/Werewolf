@@ -137,7 +137,12 @@ public class Client {
             sendTcp(jsonRequest);
             jsonResponse = receiveTcp();
             ArrayList<JSONObject> jr = (ArrayList) jsonResponse.get("clients");
-            if(jr.size() > udpTargetIPAddress.size()){
+            if(udpTargetIPAddress.size() == 0){
+                for(int i = 0; i < jr.size(); i++){
+                    udpTargetIPAddress.add(InetAddress.getByName(jr.get(i).get("address").toString()));
+                    udpTargetPort.add(Integer.parseInt(jr.get(i).get("port").toString()));
+                }
+            }else if(jr.size() > udpTargetIPAddress.size()){
                 int i = jr.size() - 1;
                 udpTargetIPAddress.add(InetAddress.getByName(jr.get(i).get("address").toString()));
                 udpTargetPort.add(Integer.parseInt(jr.get(i).get("port").toString()));
