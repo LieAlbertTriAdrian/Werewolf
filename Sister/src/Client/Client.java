@@ -39,9 +39,11 @@ public class Client {
     private int udpPort;
     private ArrayList<InetAddress> udpTargetIPAddress;
     private ArrayList<Integer> udpTargetPort;
+
     private DatagramSocket datagramSocket;
     private Runnable udpSender;
-            
+    private ArrayList<Client> otherClients;
+    
     /* TCP */
     private String tcpIPAddress;
     private int tcpPort;
@@ -63,6 +65,7 @@ public class Client {
         this.udpTargetPort = new ArrayList<Integer>();
         this.playerIds = new ArrayList<Integer>();
         this.votes = new ArrayList<Integer>();
+        this.otherClients = new ArrayList<Client>();
         otherClientsChecker = new Runnable(){
             public void run(){
                 try {
@@ -257,17 +260,6 @@ public class Client {
                 int senderId = playerId;
                 paxosPrepareProposal(votedId, playerId, acceptors);
                 break;
-            case "broadcast":
-                System.out.println("Masuk broadcase");
-                JSONObject example = new JSONObject();
-                example.put("message", "hai");
-                ArrayList<Integer> acceptorsExample = new ArrayList<Integer>();
-                System.out.println("player Id : " + playerId);
-                for(int i = 0; i < udpTargetIPAddress.size() - 2; i++)
-                    acceptorsExample.add(i);
-        
-                broadcastUdp(example, acceptorsExample);
-                break;
             case "vote_werewolf" :
                 System.out.print("Enter playerId that you want to kill: ");
                 sc = new Scanner(System.in);
@@ -357,28 +349,6 @@ public class Client {
         return response;
     }
 
-//    public void paxosPrepareProposalResponseAll () throws SocketException, IOException, ParseException {
-//        JSONObject clientsResponse = listClient();
-//        ArrayList<JSONObject> clients = (ArrayList<JSONObject>) clientsResponse.get("clients");
-//
-//        for (JSONObject client: clients) {
-//            DatagramSocket serverSocket = new DatagramSocket(client.getInt("udp_port"));
-//            byte[] receiveData = new byte[1024];
-//
-//            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-//            serverSocket.receive(receivePacket);
-//
-//            String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-//            System.out.println("RECEIVED: " + sentence);
-//            
-//            JSONObject request = new JSONObject(sentence);
-//            JSONObject response = paxosPrepareProposalResponse(request);
-//            int senderId = Integer.parseInt(response.get("sender_id").toString());
-//            UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
-//            sendUdp(response, udpTargetIPAddress.get(senderId), udpTargetPort.get(senderId), unreliableSender);
-//        }        
-//    }
-    
     public void paxosAcceptProposal (int proposalNumber, int playerId, int kpuId) throws IOException, ParseException {
         JSONObject request = new JSONObject();
         request.put("method", "accept_proposal");
