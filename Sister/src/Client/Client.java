@@ -87,16 +87,12 @@ public class Client {
         while(true){
             String sentence = inFromUser.readLine();
             String[] words = sentence.split(" ");
-            System.out.println("Format [toServer command] or [toOthers playerId command]");
             if(words.length > 1){
                 sentence = sentence.substring(words[0].length()+1);
                 if(!sentence.equals("")){
                     if(words[0].equals("toOthers")){
                         sentence = sentence.substring(words[1].length()+1);
-                        System.out.println("words[1] : " + words[1]);
-                        System.out.println("sentence" + sentence);
                         int currentPlayerId = Integer.parseInt(words[1]);
-                        System.out.println("current player id : " + currentPlayerId);
                         callUdp(sentence, currentPlayerId);
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
@@ -160,12 +156,12 @@ public class Client {
             }
             public void receive() throws IOException{
                 int i = index;
-                System.out.println(i);
-                System.out.println(udpPort);
+                System.out.println("Reveive Thread-" + i + " : " + udpPort);
                 DatagramSocket serverSocket = new DatagramSocket(udpPort);
                 byte[] receiveData = new byte[1024];
 
                 while (true) {
+                    System.out.println("while true");
                     DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                     serverSocket.receive(receivePacket);
 
@@ -204,7 +200,7 @@ public class Client {
                 example.put("message", "hai");
                 ArrayList<Integer> acceptorsExample = new ArrayList<Integer>();
                 System.out.println("player Id : " + playerId);
-                for(int i = 0; i < playerId - 1; i++)
+                for(int i = 0; i < udpTargetIPAddress.size() - 2; i++)
                     acceptorsExample.add(i);
         
                 broadcastUdp(example, acceptorsExample);
@@ -224,9 +220,10 @@ public class Client {
             int currentPort = udpTargetPort.get(acceptorId);
             System.out.println("current  port : " + currentPort);
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
-            DatagramSocket serverSocket = new DatagramSocket(currentPort);
-            UnreliableSender unreliableSender = new UnreliableSender(serverSocket);
+            System.out.println("datagram socket : " + this.datagramSocket);
+            UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
             sendUdp(request,currentIPAddress,currentPort,unreliableSender);
+            addReceiver();
         }
     }
     
