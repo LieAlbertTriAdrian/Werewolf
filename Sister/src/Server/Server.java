@@ -297,11 +297,24 @@ public class Server {
     }
     
    public void startGame(int index) throws IOException{
+       JSONObject player = Clients.get(index);
        JSONObject jsonRequest = new JSONObject();
        jsonRequest.put("method","start");
        jsonRequest.put("time","day");
-       jsonRequest.put("role","werewolf");
-       jsonRequest.put("friend","ahmad, dariel");
+       jsonRequest.put("role",player.getString("role"));
+       String friends = "";
+       for(int i = 0; i < Clients.size(); i++){
+           if (i != index){
+               if(Clients.get(i).getString("role").equals(player.getString("role"))){
+                   if(friends.equals("")){
+                       friends = Clients.get(i).getString("role");
+                   }else{
+                       friends = friends + ", " + Clients.get(i).getString("role");
+                   }
+               }
+           }
+       }
+       jsonRequest.put("friend",friends);
        jsonRequest.put("description","game is started");
        send(jsonRequest, index);
        System.out.println(jsonRequest);
