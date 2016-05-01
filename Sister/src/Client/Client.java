@@ -187,18 +187,19 @@ public class Client {
                     JSONObject response = new JSONObject();
                     System.out.println("RECEIVED: " + sentence);
 
-                    if (request.has("method")){
-                        String method = request.get("method").toString();
-                        if (method.equals("prepare_proposal")) {
-                            System.out.println("Masuk prepare Proposal");
-                            response = paxosPrepareProposalResponse(request);
-                            System.out.println("Response " + response);
-                            int senderId = response.getInt("sender_id");
-                            ArrayList<Integer> acceptors = new ArrayList<Integer>();
-                            for(int j = 0; j <= senderId; j++)
-                                acceptors.add(j);                        
-                            broadcastPrepareProposalUDP(response,acceptors,senderId);
-                    }
+//                    if (request.has("method")){
+//                        String method = request.get("method").toString();
+//                        if (method.equals("prepare_proposal")) {
+//                            System.out.println("Masuk prepare Proposal");
+//                            response = paxosPrepareProposalResponse(request);
+//                            System.out.println("Response " + response);
+//                            int senderId = response.getInt("sender_id");
+//                            ArrayList<Integer> acceptors = new ArrayList<Integer>();
+//                            for(int j = 0; j <= senderId; j++)
+//                                acceptors.add(j);                        
+//                            broadcastPrepareProposalUDP(response,acceptors,senderId);
+//                        }
+//                    }
 
 //                        InetAddress currentIPAddress = udpTargetIPAddress.get(senderId);
 //                        int currentPort = udpTargetPort.get(senderId);
@@ -208,7 +209,7 @@ public class Client {
 //                        sendUdp(response,currentIPAddress,currentPort,unreliableSender);
 //                        System.out.println("addPrepareProposalReceived");
 //                        addPrepareProposalReceiver(Server.Server.getDatagramSockets().get(senderId));
-                    }
+                    
                         
                     //parsemessage
                     //ngerubah variabel global
@@ -262,7 +263,7 @@ public class Client {
                 System.out.print("Enter playerId that you want to vote: ");
                 Scanner sc = new Scanner(System.in);
                 ArrayList<Integer> acceptors = new ArrayList<Integer>();
-                for(int i = 0; i <= playerId; i++)
+                for(int i = 0; i < udpTargetPort.size(); i++)
                     acceptors.add(i);
                 int votedId = sc.nextInt();
                 int senderId = playerId;
@@ -294,11 +295,12 @@ public class Client {
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
             System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
-            if (i != senderId) {
-                JSONObject none = new JSONObject();                
+            if (i < udpTargetPort.size()-2) {
+                System.out.println(i+request.toString());
+                //sendUdp(request,currentIPAddress,currentPort,unreliableSender);
+                //addPrepareProposalReceiver(this.datagramSocket);
             } else {
-                sendUdp(request,currentIPAddress,currentPort,unreliableSender);
-                addPrepareProposalReceiver(this.datagramSocket);
+                JSONObject none = new JSONObject();                
             }
         }    
     }
@@ -312,8 +314,14 @@ public class Client {
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
             System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
-            sendUdp(request,currentIPAddress,currentPort,unreliableSender);
-        }
+            if (i < udpTargetPort.size()-2) {
+                System.out.println(i+request.toString());
+                sendUdp(request,currentIPAddress,currentPort,unreliableSender);
+                //addPrepareProposalReceiver(this.datagramSocket);
+            } else {
+                JSONObject none = new JSONObject();                
+            }
+        }    
     }
     
     public void closeUdp () {
