@@ -33,6 +33,7 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private ArrayList<Socket> connectionSocket;
+    public static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
     private ArrayList<JSONObject> Clients;
     private Runnable receiver;
     private String round;
@@ -42,7 +43,6 @@ public class Server {
     private int kpuElected;
     private ArrayList<Integer> kpuIds;
     private ArrayList<Integer> votes;
-    public static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
 
     public Server (int port) throws IOException {
         this.listenPort = port;
@@ -51,6 +51,7 @@ public class Server {
         this.isGameRunning = false;
         this.isKPUElected = false;
         this.connectionSocket = new ArrayList<Socket>();
+        datagramSockets = new ArrayList<DatagramSocket>();
         this.kpuIds = new ArrayList<Integer>();
         this.votes = new ArrayList<Integer>();
         receiver = new Runnable() {
@@ -104,6 +105,7 @@ public class Server {
                 }
             }
         };
+
     }
     
     public JSONObject getClient(int playerId){
@@ -119,8 +121,10 @@ public class Server {
             Socket s = serverSocket.accept();
             connectionSocket.add(s);
             new Thread(receiver).start();
+
         }
     }
+
     
     public void stopServer () throws IOException {
         serverSocket.close();
