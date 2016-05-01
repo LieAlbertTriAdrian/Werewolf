@@ -232,15 +232,18 @@ public class Client {
                             for(int j = 0; j <= senderId; j++)
                                 acceptors.add(j);                        
                             broadcastPrepareProposalUDP(response,acceptors,senderId);
-                        } 
+                        } else if (method.equals("kpu_selected")){
+                            kpuId = request.getInt("kpu_id");
+                            response = kpuSelectedResponse(request);
+                        }
                     } else if (request.has("previous_accepted")){
-//                        int id_kpu = request.getInt("previous_accepted");
-//                        int player_id = request.getInt("previous_accepted");
-//                        int senderId = request.getInt("sender_id");
-//                        paxosAcceptProposal(proposalNumber, player_id, id_kpu, senderId);
+                        int id_kpu = request.getInt("previous_accepted");
+                        int player_id = request.getInt("previous_accepted");
+                        int senderId = request.getInt("sender_id");
+                        paxosAcceptProposal(proposalNumber, player_id, id_kpu, senderId);
                     } else if (!request.has("previous_accepted") && request.has("status") && request.has("description")) {
                         //Accepted Proposal ke TCP Server
-//                        clientAcceptProposal()
+                        clientAcceptProposal(request.getInt("previous_accepted"));
                     }
                     else {
                         System.out.println("request" + request);
@@ -287,9 +290,6 @@ public class Client {
         {
             this.datagramSocket.close();
         }
-//        System.out.println(playerId+" "+udpTartogetIPAddress.get(playerId)+" "+udpTargetPort.get(playerId));
-//        System.out.println("sentence : " + sentence);
-//        sendUdp(new JSONObject(sentence), udpTargetIPAddress.get(playerId), udpTargetPort.get(playerId), unreliableSender);
         switch (sentence) {
             case "prepare_proposal" :
                 System.out.print("Enter playerId that you want to vote: ");
@@ -414,7 +414,7 @@ public class Client {
         request.put("proposal_id",proposal_id);
         request.put("kpu_id", kpuId);
         ArrayList<Integer> acceptors = new ArrayList<Integer>();
-        for(int i = 0; i < playerId - 1; i++)
+        for(int i = 0; i < senderId - 1; i++)
             acceptors.add(i);
         broadcastUdp(request, acceptors);
     }
@@ -639,10 +639,8 @@ public class Client {
         JSONObject jsonResponse = new JSONObject();        
         String status;
         String message;
-        int playerId, vote = 0;
                 
         if (request.has("method")) {
-            kpuId = request.getInt("kpu_id");
             status = "ok";
             message = "kpu id has been received";
         } else {
