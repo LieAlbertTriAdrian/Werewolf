@@ -87,14 +87,17 @@ public class Client {
         while(true){
             String sentence = inFromUser.readLine();
             String[] words = sentence.split(" ");
+            System.out.println("Format [toServer command] or [toOthers playerId command]");
             if(words.length > 1){
                 sentence = sentence.substring(words[0].length()+1);
                 if(!sentence.equals("")){
                     if(words[0].equals("toOthers")){
-//                        sentence = sentence.substring(words[1].length()+1);
-//                        callUdp(sentence,Integer.parseInt(words[1]));
-                        System.out.println("Sentence : " +  sentence);  
-                        callUdp(sentence);
+                        sentence = sentence.substring(words[1].length()+1);
+                        System.out.println("words[1] : " + words[1]);
+                        System.out.println("sentence" + sentence);
+                        int currentPlayerId = Integer.parseInt(words[1]);
+                        System.out.println("current player id : " + currentPlayerId);
+                        callUdp(sentence, currentPlayerId);
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
                     }
@@ -176,7 +179,7 @@ public class Client {
         new Thread(receiver).start();
     }
     
-    public void callUdp (String sentence) throws IOException, ParseException {
+    public void callUdp (String sentence, int playerId) throws IOException, ParseException {
         UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
         if (sentence.equals("quit"))
         {
@@ -200,6 +203,7 @@ public class Client {
                 JSONObject example = new JSONObject();
                 example.put("message", "hai");
                 ArrayList<Integer> acceptorsExample = new ArrayList<Integer>();
+                System.out.println("player Id : " + playerId);
                 for(int i = 0; i < playerId - 1; i++)
                     acceptorsExample.add(i);
         
@@ -214,9 +218,11 @@ public class Client {
     }
     
     public void broadcastUdp (JSONObject request, ArrayList<Integer> acceptors) throws IOException, ParseException {
+        System.out.println("Acceptors size : " + acceptors.size());
         for(int i = 0; i < acceptors.size(); i++){
             int acceptorId = acceptors.get(i);
             int currentPort = udpTargetPort.get(acceptorId);
+            System.out.println("current  port : " + currentPort);
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
             DatagramSocket serverSocket = new DatagramSocket(currentPort);
             UnreliableSender unreliableSender = new UnreliableSender(serverSocket);
