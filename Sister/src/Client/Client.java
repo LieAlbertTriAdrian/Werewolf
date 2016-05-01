@@ -198,6 +198,8 @@ public class Client {
                             for(int j = 0; j <= senderId; j++)
                                 acceptors.add(j);                        
                             broadcastPrepareProposalUDP(response,acceptors,senderId);
+                    } else {
+                            System.out.println("request" + request);
                     }
 
 //                        InetAddress currentIPAddress = udpTargetIPAddress.get(senderId);
@@ -295,11 +297,13 @@ public class Client {
             System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
             if (i != senderId) {
-                JSONObject none = new JSONObject();                
+                JSONObject none = new JSONObject();
+                none.put("none", "testing broadcast prpoposal");
+                sendUdp(none,currentIPAddress,currentPort,unreliableSender);
             } else {
                 sendUdp(request,currentIPAddress,currentPort,unreliableSender);
-                addPrepareProposalReceiver(this.datagramSocket);
             }
+            addPrepareProposalReceiver(this.datagramSocket);
         }    
     }
     
@@ -312,7 +316,13 @@ public class Client {
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
             System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
-            sendUdp(request,currentIPAddress,currentPort,unreliableSender);
+            if (i < acceptors.size() - 2) {
+                JSONObject none = new JSONObject();
+                none.put("none", "testing broadcast udp");
+                sendUdp(none,currentIPAddress,currentPort,unreliableSender);
+            } else {
+                sendUdp(request,currentIPAddress,currentPort,unreliableSender);            
+            }
         }
     }
     
