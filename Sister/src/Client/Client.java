@@ -215,29 +215,34 @@ public class Client {
                             System.out.println("Response " + response);
                             int senderId = response.getInt("sender_id");
                             ArrayList<Integer> acceptors = new ArrayList<Integer>();
-                            for(int j = 0; j < senderId; j++)
+                            for(int j = 0; j <= senderId; j++)
                                 acceptors.add(j);                        
-                            //broadcastPrepareProposalUDP(response,acceptors,senderId);
-                    } else {
-                            System.out.println("request" + request);
+                            broadcastPrepareProposalUDP(response,acceptors,senderId);
+                        } else if (method.equals("accept_proposal")) {
+                            System.out.println("Masuk accept Proposal");
+                            response = PaxosAcceptProposalResponse(request);
+                            System.out.println("Response " + response);
+                            int senderId = response.getInt("sender_id");
+                            ArrayList<Integer> acceptors = new ArrayList<Integer>();
+                            for(int j = 0; j <= senderId; j++)
+                                acceptors.add(j);                        
+                            broadcastPrepareProposalUDP(response,acceptors,senderId);
+                        } 
+                    } else if (request.has("previous_accepted")){
+//                        int id_kpu = request.getInt("previous_accepted");
+//                        int player_id = request.getInt("previous_accepted");
+//                        int senderId = request.getInt("sender_id");
+//                        paxosAcceptProposal(proposalNumber, player_id, id_kpu, senderId);
+                    } else if (!request.has("previous_accepted") && request.has("status") && request.has("description")) {
+                        //Accepted Proposal ke TCP Server
+//                        clientAcceptProposal()
                     }
-
-//                        InetAddress currentIPAddress = udpTargetIPAddress.get(senderId);
-//                        int currentPort = udpTargetPort.get(senderId);
-//                        System.out.println("prepare_proposal_response : " + currentIPAddress + ":" + currentPort);
-//                        UnreliableSender unreliableSender = new UnreliableSender(Server.Server.getDatagramSockets().get(senderId));
-//                        System.out.println("before send UDP " + currentIPAddress + ":" + currentPort);
-//                        sendUdp(response,currentIPAddress,currentPort,unreliableSender);
-//                        System.out.println("addPrepareProposalReceived");
-//                        addPrepareProposalReceiver(Server.Server.getDatagramSockets().get(senderId));
-                    
-                        
-                    //parsemessage
-                    //ngerubah variabel global
+                    else {
+                        System.out.println("request" + request);
+                    }
                 }     
            } 
             
-            }
         };
         new Thread(receiver).start();
     }
@@ -263,7 +268,7 @@ public class Client {
                     mySocket.receive(receivePacket);
 
                     String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
-                    System.out.println("RECEIVED: " + sentence);
+                    System.out.println("RECEIVED PREPAPRE PROPOSAL: " + sentence);
                 }     
            } 
             
@@ -313,18 +318,12 @@ public class Client {
         for(int i = 0; i < acceptors.size(); i++){
             int acceptorId = acceptors.get(i);
             int currentPort = udpTargetPort.get(acceptorId);
-            System.out.println("current  port : " + currentPort);
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
-            System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
-            if (i != senderId) {
-                JSONObject none = new JSONObject();
-                none.put("none", "testing broadcast prpoposal");
-                sendUdp(none,currentIPAddress,currentPort,unreliableSender);
-            } else {
+            if (i == senderId) {
                 sendUdp(request,currentIPAddress,currentPort,unreliableSender);
+                addPrepareProposalReceiver(this.datagramSocket);
             }
-            addPrepareProposalReceiver(this.datagramSocket);
         }    
     }
     
@@ -333,9 +332,7 @@ public class Client {
         for(int i = 0; i < acceptors.size(); i++){
             int acceptorId = acceptors.get(i);
             int currentPort = udpTargetPort.get(acceptorId);
-            System.out.println("current  port : " + currentPort);
             InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
-            System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
             if (i < udpTargetPort.size()-2) {
                 System.out.println(i+request.toString());
@@ -405,13 +402,16 @@ public class Client {
         return response;
     }
 
-    public void paxosAcceptProposal (int proposalNumber, int playerId, int kpuId) throws IOException, ParseException {
+    public void paxosAcceptProposal (int proposalNumber, int playerId, int kpuId, int senderId) throws IOException, ParseException {
         JSONObject request = new JSONObject();
         request.put("method", "accept_proposal");
         int[] proposal_id = {proposalNumber, playerId};
         request.put("proposal_id",proposal_id);
         request.put("kpu_id", kpuId);
-        //broadcastUdp(request);
+        ArrayList<Integer> acceptors = new ArrayList<Integer>();
+        for(int i = 0; i < playerId - 1; i++)
+            acceptors.add(i);
+        broadcastUdp(request, acceptors);
     }
 
     public JSONObject PaxosAcceptProposalResponse (JSONObject request) {
