@@ -93,7 +93,7 @@ public class Server {
                         i++;
                     }
                     if (i == readyStates.size()){
-                        //startGame();
+                        startGame();
                     }
                     
                     /*Kondisi Game Over */
@@ -398,28 +398,29 @@ public class Server {
         return -1;
     }
     
-   public void startGame(int index) throws IOException{
-       JSONObject player = Clients.get(index);
-       JSONObject jsonRequest = new JSONObject();
-       jsonRequest.put("method","start");
-       jsonRequest.put("time","day");
-       jsonRequest.put("role",player.getString("role"));
-       String friends = "";
-       for(int i = 0; i < Clients.size(); i++){
-           if (i != index){
-               if(Clients.get(i).getString("role").equals(player.getString("role"))){
-                   if(friends.equals("")){
-                       friends = Clients.get(i).getString("role");
-                   }else{
-                       friends = friends + ", " + Clients.get(i).getString("role");
-                   }
-               }
-           }
-       }
-       jsonRequest.put("friend",friends);
-       jsonRequest.put("description","game is started");
-       send(jsonRequest, index);
-       System.out.println(jsonRequest);
+    public void startGame() throws IOException{
+        for(int index = 0; index < Clients.size(); index++){
+            JSONObject player = Clients.get(index);
+            JSONObject jsonRequest = new JSONObject();
+            jsonRequest.put("method","start");
+            jsonRequest.put("time","day");
+            jsonRequest.put("role",player.getString("role"));
+            String friends = "";
+            for(int i = 0; i < Clients.size(); i++){
+                if (i != index){
+                    if(Clients.get(i).getString("role").equals(player.getString("role"))){
+                        if(friends.equals("")){
+                            friends = Clients.get(i).getString("role");
+                        }else{
+                            friends = friends + ", " + Clients.get(i).getString("role");
+                        }
+                    }
+                }
+            }
+            jsonRequest.put("friend",friends);
+            jsonRequest.put("description","game is started");
+            send(jsonRequest, index);
+        }
    }
    
    public void changePhase(int index) throws IOException{

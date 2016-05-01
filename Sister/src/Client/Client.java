@@ -44,6 +44,7 @@ public class Client {
     private ArrayList<InetAddress> udpTargetIPAddress;
     private ArrayList<Integer> udpTargetPort;
     private ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
+    private ArrayList<String> usernames;
 
     private DatagramSocket datagramSocket;
     private Runnable udpSender;
@@ -56,6 +57,7 @@ public class Client {
     private int others;
     private Runnable otherClientsChecker;
     private Runnable prepareProposalReceiver;
+    private boolean isRunning;
     
     public Client (String udpIPAddress, int udpPort, String tcpIPAddress,int tcpPort) throws IOException {
 //        this.tcpClient = new TCPClient(IPAddress,serverPort);
@@ -71,6 +73,8 @@ public class Client {
         this.playerIds = new ArrayList<Integer>();
         this.votes = new ArrayList<Integer>();
         this.otherClients = new ArrayList<Client>();
+        this.usernames = new ArrayList<String>();
+        isRunning = true;
         otherClientsChecker = new Runnable(){
             public void run(){
                 try {
@@ -85,6 +89,7 @@ public class Client {
             }
         };
         
+        new Thread(otherClientsChecker).start();
         prepareProposalReceiver = new Runnable () {
             public void run () {
                 
@@ -94,12 +99,11 @@ public class Client {
     
 
     public void start() throws IOException, ParseException{
+        System.out.println("You Have Join the Game");
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         addReceiver();
-        new Thread(otherClientsChecker).start();
         //startUDPClient();
-        System.out.println("datagramSockets" + Server.Server.getDatagramSockets().size());
-        while(true){
+        while(isRunning){
             String sentence = inFromUser.readLine();
             String[] words = sentence.split(" ");
             if(words.length > 1){
@@ -119,6 +123,10 @@ public class Client {
                 }
             }
         }
+    }
+    
+    public void stop(){
+        isRunning = false;
     }
     
     public boolean getIsKPU () {
@@ -149,14 +157,26 @@ public class Client {
                 for(int i = 0; i < jr.length(); i++){
                     udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
                     udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
+                    usernames.add(jr.getJSONObject(i).getString("username"));
                 }
             }else if(jr.length() > udpTargetIPAddress.size()){
                 int i = jr.length() - 1;
+                System.out.println(jr.getJSONObject(i).get("username") + " Has Join the Game");
                 udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
                 udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
+                usernames.add(jr.getJSONObject(i).getString("username"));
+            }else if(jr.length() < udpTargetIPAddress.size()){
+                int i = 0;
+                for(i = 0; i < udpTargetPort.size(); i++){
+                    if(jr.getJSONObject(i).getInt("port") != udpTargetPort.get(i)) break;
+                }
+                System.out.println(usernames.get(i) + " Has Left the Game");
+                udpTargetIPAddress.remove(i);
+                udpTargetPort.remove(i);
+                usernames.remove(i);
             }
             sleep(1000);
-        }while(true);
+        }while(isRunning);
     }
     
     /****************  UDP Method   ****************/    
@@ -525,7 +545,6 @@ public class Client {
         JSONObject jsonResponse = receiveTcp();
         
         if(jsonResponse.get("status").equals("ok")){
-            System.out.println("OK!!!!!!!!!");
             playerId = jsonResponse.getInt("player_id");
             Server.Server.addDatagramSockets(this.datagramSocket);
             return true;
@@ -540,7 +559,6 @@ public class Client {
         jsonRequest.put("method","leave");
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse);
         if(jsonResponse.get("status").equals("ok")){
             return true;
         }else{
@@ -631,12 +649,14 @@ public class Client {
     public static void main(String args[]) throws IOException, ParseException {
         Config config = new Config();
         Scanner sc = new Scanner(System.in);
-        System.out.println("Command:");
-        System.out.println("    1. Play");
-        System.out.println("    2. Exit");
-        System.out.print("Choose your command: ");
-        while(true){
+        boolean menu1 = true;
+        while(menu1 == true){
+            System.out.println("Command:");
+            System.out.println("    1. Play");
+            System.out.println("    2. Exit");
+            System.out.print("Choose your command: ");
             int command = sc.nextInt();
+            System.out.println(command);
             if(command == 1){
                 System.out.print("Enter your port: ");
                 int clientPort = sc.nextInt();
@@ -645,26 +665,26 @@ public class Client {
                 do{
                     //nothing
                 }while(!client.joinGame());
-                //BROADCAST KE SEMUA PLAYER KALO PLAYER INI UDAH MASUK KE GAME
-                System.out.println("Choose your command: ");
-                System.out.println("     1. Ready Up!");
-                System.out.println("     2. Leave Game");
-                while(true){
+                boolean menu2 = true;
+                while(menu2 == true){
+                    System.out.println("Choose your command: ");
+                    System.out.println("     1. Ready Up!");
+                    System.out.println("     2. Leave Game");
                     command = sc.nextInt();
                     if(command == 1){
                         do{
                             //nothing
                         }while(!client.readyUp());
-                        client.start();
                     }else if(command == 2){
                         do{
                             //nothing
                         }while(!client.leaveGame());
-                        break;
+                        client.stop();
+                        menu2 = false;
                     }
                 }
             }else if(command == 2){
-                break;
+                menu1 = false;
             }
         }
     }
