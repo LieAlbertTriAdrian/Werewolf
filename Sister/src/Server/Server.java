@@ -6,6 +6,7 @@
 package Server;
 
 import Client.Client;
+import Config.Config;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -353,4 +354,11 @@ public class Server {
        System.out.println(jsonRequest);
    }
     
+   public static void main(String args[]) throws IOException, ParseException {
+        Config config = new Config();
+        int serverPort = config.serverPort;
+        
+        Server server = new Server(serverPort);
+        server.startServer();
+   }
 }

@@ -1,6 +1,7 @@
 
 package Client;
 
+import Config.Config;
 import Sender.UnreliableSender;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
@@ -33,6 +34,7 @@ public class Client {
     private ArrayList<Integer> playerIds;
     private ArrayList<Integer> votes;
     private int previousAcceptedKpuId = 0;
+    private String errorMessage;
     
     /* UDP */
     private InetAddress udpIPAddress;
@@ -85,12 +87,13 @@ public class Client {
                 
             }
         };
-        new Thread(otherClientsChecker).start();
     }
     
 
     public void start() throws IOException, ParseException{
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
+        addReceiver();
+        new Thread(otherClientsChecker).start();
         //startUDPClient();
         while(true){
             String sentence = inFromUser.readLine();
@@ -133,8 +136,6 @@ public class Client {
     
     public void checkOtherClients() throws IOException, ParseException, InterruptedException {
         JSONObject jsonResponse;
-        //get other client//
-        addReceiver();
         do{
             JSONObject jsonRequest = new JSONObject();
             jsonRequest.put("method","client_address");
@@ -171,12 +172,10 @@ public class Client {
             }
             public void receive() throws IOException, ParseException{
                 int i = index;
-                System.out.println("Reveive Thread-" + i + " : " + udpPort);
                 DatagramSocket serverSocket = new DatagramSocket(udpPort);
                 byte[] receiveData = new byte[1024];
 
                 while (true) {
-                    System.out.println("while true");
                     DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                     serverSocket.receive(receivePacket);
 
@@ -287,7 +286,6 @@ public class Client {
             System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
             sendUdp(request,currentIPAddress,currentPort,unreliableSender);
-            addReceiver();
         }
     }
     
@@ -478,11 +476,11 @@ public class Client {
         this.tcpSocket.close();
     }
     
-    public void joinGame() throws IOException, ParseException{
+    public boolean joinGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         Scanner input = new Scanner(System.in);
 
-        System.out.print("Enter your username : ");
+        System.out.print("Enter your username: ");
         String username = input.nextLine();
 
         jsonRequest.put("method","join");
@@ -492,23 +490,42 @@ public class Client {
                         
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse);
+        
+        if(jsonResponse.get("status").equals("ok")){
+            playerId = jsonResponse.getInt("player_id");
+            return true;
+        }else{
+            errorMessage = jsonResponse.getString("description");
+            return false;
+        }
     }
     
-    public void leaveGame() throws IOException, ParseException{
+    public boolean leaveGame() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","leave");
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse.toString());
+        
+        if(jsonResponse.get("status").equals("ok")){
+            return true;
+        }else{
+            errorMessage = jsonResponse.getString("description");
+            return false;
+        }
     }
     
-    public void readyUp() throws IOException, ParseException{
+    public boolean readyUp() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","ready");
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse);
+        
+        if(jsonResponse.get("status").equals("ok")){
+            return true;
+        }else{
+            errorMessage = jsonResponse.getString("description");
+            return false;
+        }
     }
     
     public JSONObject listClient() throws IOException, ParseException{
@@ -549,5 +566,46 @@ public class Client {
         org.json.JSONObject jsonResponse = new org.json.JSONObject();
         //jsonResponse = receive();
         System.out.println(jsonResponse);
+    }
+    
+    public static void main(String args[]) throws IOException, ParseException {
+        Config config = new Config();
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Command:");
+        System.out.println("    1. Play");
+        System.out.println("    2. Exit");
+        System.out.print("Choose your command: ");
+        while(true){
+            int command = sc.nextInt();
+            if(command == 1){
+                System.out.print("Enter your port: ");
+                int clientPort = sc.nextInt();
+                int serverPort = config.serverPort;
+                Client client = new Client("localhost", clientPort,"localhost", serverPort);
+                do{
+                    //nothing
+                }while(!client.joinGame());
+                //BROADCAST KE SEMUA PLAYER KALO PLAYER INI UDAH MASUK KE GAME
+                System.out.println("Choose your command: ");
+                System.out.println("     1. Ready Up!");
+                System.out.println("     2. Leave Game");
+                while(true){
+                    command = sc.nextInt();
+                    if(command == 1){
+                        do{
+                            //nothing
+                        }while(!client.readyUp());
+                        client.start();
+                    }else if(command == 2){
+                        do{
+                            //nothing
+                        }while(!client.leaveGame());
+                        break;
+                    }
+                }
+            }else if(command == 2){
+                break;
+            }
+        }
     }
 }
