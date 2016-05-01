@@ -237,7 +237,7 @@ public class Server {
     public JSONObject leaveGameResponse (JSONObject request) {
         JSONObject jsonResponse = new JSONObject();        
         String status;
-        
+        System.out.println(jsonResponse);
         /* Error Handling */        
         if (request.has("method")) {
             status = "ok";
