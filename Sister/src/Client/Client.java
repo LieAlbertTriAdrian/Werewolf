@@ -89,9 +89,20 @@ public class Client {
                         callUdp(sentence,Integer.parseInt(words[1]));
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
+                    }else if(words[0].equals("broadcast")){
+                        ArrayList<Integer> acceptors = new ArrayList<Integer>();
+                        for(int i = 0; i < playerId - 1; i++)
+                            acceptors.add(i);
+                        broadcast(sentence,acceptors);
                     }
                 }
             }
+        }
+    }
+    
+    public void broadcast(String message, ArrayList<Integer> acceptors) throws IOException{
+        for(int i = 0; i < acceptors.size(); i++){
+            callUdp(message,acceptors.get(i));
         }
     }
     
@@ -138,6 +149,7 @@ public class Client {
             jsonResponse = receiveTcp();
             ArrayList<JSONObject> jr = (ArrayList) jsonResponse.get("clients");
             if(udpTargetIPAddress.size() == 0){
+                playerId = jr.size();
                 for(int i = 0; i < jr.size(); i++){
                     udpTargetIPAddress.add(InetAddress.getByName(jr.get(i).get("address").toString()));
                     udpTargetPort.add(Integer.parseInt(jr.get(i).get("port").toString()));
