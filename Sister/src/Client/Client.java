@@ -101,12 +101,17 @@ public class Client {
                         callUdp(sentence, currentPlayerId);
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
+                    }else if(words[0].equals("broadcast")){
+                        ArrayList<Integer> acceptors = new ArrayList<Integer>();
+                        for(int i = 0; i < playerId - 1; i++)
+                            acceptors.add(i);
+                        
                     }
                 }
             }
         }
     }
-        
+    
     public boolean getIsKPU () {
         return this.isKPU;
     }
@@ -157,9 +162,11 @@ public class Client {
                     receive();
                 } catch (IOException ex) {
 
+                } catch (ParseException ex) {
+                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            public void receive() throws IOException{
+            public void receive() throws IOException, ParseException{
                 int i = index;
                 System.out.println("Reveive Thread-" + i + " : " + udpPort);
                 DatagramSocket serverSocket = new DatagramSocket(udpPort);
@@ -171,13 +178,63 @@ public class Client {
                     serverSocket.receive(receivePacket);
 
                     String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    JSONObject request = new JSONObject(sentence);
+                    JSONObject response = new JSONObject();
                     System.out.println("RECEIVED: " + sentence);
+
+                    String method = request.get("method").toString();
+                    if (method.equals("prepare_proposal")) {
+                        System.out.println("Masuk prepare Proposal");
+                        response = paxosPrepareProposalResponse(request);
+                        System.out.println("Response " + response);
+                        int senderId = response.getInt("sender_id");
+                        InetAddress currentIPAddress = udpTargetIPAddress.get(senderId);
+                        int currentPort = udpTargetPort.get(senderId);
+                        System.out.println("prepare_proposal_response : " + currentIPAddress + ":" + currentPort);
+                        DatagramSocket senderSocket = new DatagramSocket(currentPort);
+                        UnreliableSender unreliableSender = new UnreliableSender(senderSocket);
+                        System.out.println("before send UDP " + currentIPAddress + ":" + currentPort);
+                        sendUdp(response,currentIPAddress,currentPort,unreliableSender);
+                        System.out.println("addPrepareProposalReceived");
+                        addPrepareProposalReceiver(currentPort);
+                    }
+                        
                     //parsemessage
                     //ngerubah variabel global
                 }     
            } 
+            
         };
         new Thread(receiver).start();
+    }
+
+    public void addPrepareProposalReceiver (final int currentPort) {
+        Runnable receiverPrepareProposal = new Runnable(){
+            public void run(){
+                try { 
+                    receivePrepareProposal(currentPort);
+                } catch (IOException ex) {
+                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (ParseException ex) {
+                    Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            public void receivePrepareProposal(int myPort) throws IOException, ParseException{
+                DatagramSocket mySocket = new DatagramSocket(myPort);
+                byte[] receiveData = new byte[1024];
+
+                while (true) {
+                    System.out.println("while true receive prepapre proposal");
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    mySocket.receive(receivePacket);
+
+                    String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+                    System.out.println("RECEIVED: " + sentence);
+                }     
+           } 
+            
+        };
+        new Thread(receiverPrepareProposal).start();
     }
     
     public void callUdp (String sentence, int playerId) throws IOException, ParseException {
@@ -197,6 +254,7 @@ public class Client {
                 for(int i = 0; i < playerId - 1; i++)
                     acceptors.add(i);
                 int votedId = sc.nextInt();
+                int senderId = playerId;
                 paxosPrepareProposal(votedId, playerId, acceptors);
                 break;
             case "broadcast":
@@ -220,6 +278,8 @@ public class Client {
     }
     
     public void sendUdp (JSONObject jsonRequest, InetAddress targetAddress, int targetPort, UnreliableSender unreliableSender) throws IOException {
+//        DatagramSocket socket = new DatagramSocket(targetPort);
+
         byte[] sendData = jsonRequest.toString().getBytes("UTF-8");
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, targetAddress, targetPort);
         unreliableSender.send(sendPacket);        
@@ -239,19 +299,16 @@ public class Client {
         }
     }
     
-
-    
     public void closeUdp () {
         this.datagramSocket.close();
     }
     
-    public void paxosPrepareProposal (int playerId, int senderId, ArrayList<Integer> acceptors) throws IOException, ParseException{
-        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+    public void paxosPrepareProposal (int votedId, int senderId, ArrayList<Integer> acceptors) throws IOException, ParseException{
         proposalNumber++;
         JSONObject request = new JSONObject();
         ArrayList<Integer> proposal_id = new ArrayList<Integer>();
         proposal_id.add(proposalNumber);
-        proposal_id.add(playerId);
+        proposal_id.add(votedId);
         request.put("method", "prepare_proposal");
         request.put("proposal_id", proposal_id);
         request.put("sender_id", senderId);        
@@ -262,24 +319,24 @@ public class Client {
         JSONObject response = new JSONObject();
         String status;
         String message;
-        int senderId = Integer.parseInt(response.get("sender_id").toString());
+        int senderId = Integer.parseInt(request.get("sender_id").toString());
         
         if (request.has("method") && request.has("proposal_id")) {
-            ArrayList<Integer> proposal_id = (ArrayList<Integer>) request.get("proposal_id");
-            int currentProposalNumber = proposal_id.get(0);
-            int currentPlayerId = proposal_id.get(1);
+            JSONArray proposal_id = (JSONArray) request.get("proposal_id");
+            int currentProposalNumber = proposal_id.getInt(0);
+            int currentPlayerId = proposal_id.getInt(1);
             
             if (currentProposalNumber > proposalNumber) {
                 proposalNumber = currentProposalNumber;
                 previousAcceptedKpuId = currentPlayerId;
                 status = "ok";
-                message = "";                
+                message = "accepted";                
                 response.put("previous_accepted", previousAcceptedKpuId);
             } else if (currentProposalNumber == proposalNumber) {
                 if (currentPlayerId >= playerId) {
                     previousAcceptedKpuId = currentPlayerId;
                     status = "ok";
-                    message = "";
+                    message = "accepted";
                     response.put("previous_accepted", previousAcceptedKpuId);
                 } else {
                     status = "fail";
@@ -289,7 +346,6 @@ public class Client {
                 status = "fail";
                 message = "rejected";
             }
-            
         } else {
             status = "error";
             message = "wrong request";            
