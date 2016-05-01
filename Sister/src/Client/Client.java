@@ -2,8 +2,6 @@
 package Client;
 
 import Sender.UnreliableSender;
-import TCP.TCPClient;
-import UDP.UDPClient;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -13,21 +11,19 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.json.simple.JSONObject;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 public class Client {
-    private TCPClient tcpClient;
-    private UDPClient udpClient;
-    private InetAddress IPAddress;
-    private int port;
     private String role;
     private int isAlive;
     private int playerId;
@@ -36,6 +32,7 @@ public class Client {
     private int proposalNumber = 0;
     private ArrayList<Integer> playerIds;
     private ArrayList<Integer> votes;
+    private int previousAcceptedKpuId = 0;
     
     /* UDP */
     private InetAddress udpIPAddress;
@@ -51,7 +48,8 @@ public class Client {
     private Socket tcpSocket;
     private int others;
     private Runnable otherClientsChecker;
-   
+    private Runnable prepareProposalReceiver;
+    
     public Client (String udpIPAddress, int udpPort, String tcpIPAddress,int tcpPort) throws IOException {
 //        this.tcpClient = new TCPClient(IPAddress,serverPort);
 //        this.udpClient = new UDPClient(IPAddress,port);
@@ -78,21 +76,33 @@ public class Client {
                 }
             }
         };
+        
+        prepareProposalReceiver = new Runnable () {
+            public void run () {
+                
+            }
+        };
         new Thread(otherClientsChecker).start();
     }
     
+
     public void start() throws IOException, ParseException{
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         //startUDPClient();
         while(true){
             String sentence = inFromUser.readLine();
             String[] words = sentence.split(" ");
+            System.out.println("Format [toServer command] or [toOthers playerId command]");
             if(words.length > 1){
                 sentence = sentence.substring(words[0].length()+1);
                 if(!sentence.equals("")){
                     if(words[0].equals("toOthers")){
                         sentence = sentence.substring(words[1].length()+1);
-                        callUdp(sentence,Integer.parseInt(words[1]));
+                        System.out.println("words[1] : " + words[1]);
+                        System.out.println("sentence" + sentence);
+                        int currentPlayerId = Integer.parseInt(words[1]);
+                        System.out.println("current player id : " + currentPlayerId);
+                        callUdp(sentence, currentPlayerId);
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
                     }
@@ -100,23 +110,7 @@ public class Client {
             }
         }
     }
-    
-    public void startTCPClient(){
-        tcpClient.start();
-    }
-    
-    public void startUDPClient(){
-        udpClient.start();
-    }
-    
-    public TCPClient getTCPClient () {
-        return this.tcpClient;
-    }
-    
-    public UDPClient getUDPClient () {
-        return this.udpClient;
-    }
-    
+        
     public boolean getIsKPU () {
         return this.isKPU;
     }
@@ -142,16 +136,16 @@ public class Client {
             jsonRequest.put("method","client_address");
             sendTcp(jsonRequest);
             jsonResponse = receiveTcp();
-            ArrayList<JSONObject> jr = (ArrayList) jsonResponse.get("clients");
+            JSONArray jr = (JSONArray)jsonResponse.get("clients");
             if(udpTargetIPAddress.size() == 0){
-                for(int i = 0; i < jr.size(); i++){
-                    udpTargetIPAddress.add(InetAddress.getByName(jr.get(i).get("address").toString()));
-                    udpTargetPort.add(Integer.parseInt(jr.get(i).get("port").toString()));
+                for(int i = 0; i < jr.length(); i++){
+                    udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
+                    udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
                 }
-            }else if(jr.size() > udpTargetIPAddress.size()){
-                int i = jr.size() - 1;
-                udpTargetIPAddress.add(InetAddress.getByName(jr.get(i).get("address").toString()));
-                udpTargetPort.add(Integer.parseInt(jr.get(i).get("port").toString()));
+            }else if(jr.length() > udpTargetIPAddress.size()){
+                int i = jr.length() - 1;
+                udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
+                udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
             }
             sleep(1000);
         }while(true);
@@ -166,7 +160,7 @@ public class Client {
                     index = udpTargetPort.size()-1;
                     receive();
                 } catch (IOException ex) {
-                    Logger.getLogger(UDPClient.class.getName()).log(Level.SEVERE, null, ex);
+
                 }
             }
             public void receive() throws IOException{
@@ -190,18 +184,36 @@ public class Client {
         new Thread(receiver).start();
     }
     
-    public void callUdp (String sentence, int playerId) throws IOException {
+    public void callUdp (String sentence, int playerId) throws IOException, ParseException {
         UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
         if (sentence.equals("quit"))
         {
             this.datagramSocket.close();
         }
-        System.out.println(playerId+" "+udpTargetIPAddress.get(playerId)+" "+udpTargetPort.get(playerId));
+//        System.out.println(playerId+" "+udpTartogetIPAddress.get(playerId)+" "+udpTargetPort.get(playerId));
+//        System.out.println("sentence : " + sentence);
+//        sendUdp(new JSONObject(sentence), udpTargetIPAddress.get(playerId), udpTargetPort.get(playerId), unreliableSender);
         switch (sentence) {
             case "prepare_proposal" :
-                paxosPrepareProposal(playerId);
+                System.out.println("Enter playerId that you want to vote: ");
+                Scanner sc = new Scanner(System.in);
+                ArrayList<Integer> acceptors = new ArrayList<Integer>();
+                for(int i = 0; i < playerId - 1; i++)
+                    acceptors.add(i);
+                int votedId = sc.nextInt();
+                paxosPrepareProposal(votedId, playerId, acceptors);
                 break;
-        }    
+            case "broadcast":
+                System.out.println("Masuk broadcase");
+                JSONObject example = new JSONObject();
+                example.put("message", "hai");
+                ArrayList<Integer> acceptorsExample = new ArrayList<Integer>();
+                System.out.println("player Id : " + playerId);
+                for(int i = 0; i < playerId - 1; i++)
+                    acceptorsExample.add(i);
+        
+                broadcastUdp(example, acceptorsExample);
+        }
     }
     
     public void sendUdp (JSONObject jsonRequest, InetAddress targetAddress, int targetPort, UnreliableSender unreliableSender) throws IOException {
@@ -210,10 +222,133 @@ public class Client {
         unreliableSender.send(sendPacket);        
     }
     
+    public void broadcastUdp (JSONObject request, ArrayList<Integer> acceptors) throws IOException, ParseException {
+        System.out.println("Acceptors size : " + acceptors.size());
+        for(int i = 0; i < acceptors.size(); i++){
+            int acceptorId = acceptors.get(i);
+            int currentPort = udpTargetPort.get(acceptorId);
+            System.out.println("current  port : " + currentPort);
+            InetAddress currentIPAddress = udpTargetIPAddress.get(acceptorId);
+            DatagramSocket serverSocket = new DatagramSocket(currentPort);
+            UnreliableSender unreliableSender = new UnreliableSender(serverSocket);
+            sendUdp(request,currentIPAddress,currentPort,unreliableSender);
+        }
+    }
+    
+
+    
     public void closeUdp () {
         this.datagramSocket.close();
     }
+    
+    public void paxosPrepareProposal (int playerId, int senderId, ArrayList<Integer> acceptors) throws IOException, ParseException{
+        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+        proposalNumber++;
+        JSONObject request = new JSONObject();
+        ArrayList<Integer> proposal_id = new ArrayList<Integer>();
+        proposal_id.add(proposalNumber);
+        proposal_id.add(playerId);
+        request.put("method", "prepare_proposal");
+        request.put("proposal_id", proposal_id);
+        request.put("sender_id", senderId);        
+        broadcastUdp(request, acceptors);
+    }
 
+    public JSONObject paxosPrepareProposalResponse (JSONObject request) throws IOException, ParseException{
+        JSONObject response = new JSONObject();
+        String status;
+        String message;
+        int senderId = Integer.parseInt(response.get("sender_id").toString());
+        
+        if (request.has("method") && request.has("proposal_id")) {
+            ArrayList<Integer> proposal_id = (ArrayList<Integer>) request.get("proposal_id");
+            int currentProposalNumber = proposal_id.get(0);
+            int currentPlayerId = proposal_id.get(1);
+            
+            if (currentProposalNumber > proposalNumber) {
+                proposalNumber = currentProposalNumber;
+                previousAcceptedKpuId = currentPlayerId;
+                status = "ok";
+                message = "";                
+                response.put("previous_accepted", previousAcceptedKpuId);
+            } else if (currentProposalNumber == proposalNumber) {
+                if (currentPlayerId >= playerId) {
+                    previousAcceptedKpuId = currentPlayerId;
+                    status = "ok";
+                    message = "";
+                    response.put("previous_accepted", previousAcceptedKpuId);
+                } else {
+                    status = "fail";
+                    message = "rejected";
+                }
+            } else {
+                status = "fail";
+                message = "rejected";
+            }
+            
+        } else {
+            status = "error";
+            message = "wrong request";            
+        }
+
+        response.put("status", status);
+        response.put("description", message);            
+        response.put("sender_id", senderId);
+        return response;
+    }
+
+//    public void paxosPrepareProposalResponseAll () throws SocketException, IOException, ParseException {
+//        JSONObject clientsResponse = listClient();
+//        ArrayList<JSONObject> clients = (ArrayList<JSONObject>) clientsResponse.get("clients");
+//
+//        for (JSONObject client: clients) {
+//            DatagramSocket serverSocket = new DatagramSocket(client.getInt("udp_port"));
+//            byte[] receiveData = new byte[1024];
+//
+//            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+//            serverSocket.receive(receivePacket);
+//
+//            String sentence = new String(receivePacket.getData(), 0, receivePacket.getLength());
+//            System.out.println("RECEIVED: " + sentence);
+//            
+//            JSONObject request = new JSONObject(sentence);
+//            JSONObject response = paxosPrepareProposalResponse(request);
+//            int senderId = Integer.parseInt(response.get("sender_id").toString());
+//            UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+//            sendUdp(response, udpTargetIPAddress.get(senderId), udpTargetPort.get(senderId), unreliableSender);
+//        }        
+//    }
+    
+    public void paxosAcceptProposal (int proposalNumber, int playerId, int kpuId) throws IOException, ParseException {
+        JSONObject request = new JSONObject();
+        request.put("method", "accept_proposal");
+        int[] proposal_id = {proposalNumber, playerId};
+        request.put("proposal_id",proposal_id);
+        request.put("kpu_id", kpuId);
+        //broadcastUdp(request);
+    }
+
+    public JSONObject PaxosAcceptProposalResponse (JSONObject request) {
+        JSONObject response = new JSONObject();
+        String status;
+        String message;
+        
+        if (request.has("method") && request.has("proposal_id") && request.has("kpu_id")) {
+            status = "ok";
+            message = "accepted";
+        } else {
+            status = "error";
+            message = "wrong request";            
+        }
+        response.put("status", status);
+        response.put("description", message);
+        return response;
+    }
+    
+    public void clientAcceptedProposal () {
+        
+    }
+    
     /****************  TCP Method   ****************/    
     public void callTcp (String method) throws IOException, ParseException {   
         if (method.equals("join")){
@@ -239,7 +374,7 @@ public class Client {
         BufferedReader inFromServer = new BufferedReader(new InputStreamReader(this.tcpSocket.getInputStream()));   
         JSONParser parser = new JSONParser();
         Object obj = parser.parse(inFromServer.readLine());
-        JSONObject jsonResponse = (JSONObject) obj;
+        JSONObject jsonResponse = new JSONObject(obj.toString());
         return jsonResponse;
     }
 
@@ -280,12 +415,12 @@ public class Client {
         System.out.println(jsonResponse);
     }
     
-    public void listClient() throws IOException, ParseException{
-        JSONObject jsonRequest = new JSONObject();
-        jsonRequest.put("method","client_address");
-        sendTcp(jsonRequest);
-        JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse);
+    public JSONObject listClient() throws IOException, ParseException{
+        JSONObject request = new JSONObject();
+        request.put("method","client_address");
+        sendTcp(request);
+        JSONObject response = receiveTcp();
+        return response;
     }
     
     public void getOther(String playerId) throws IOException, ParseException {
@@ -296,17 +431,7 @@ public class Client {
         JSONObject jsonResponse = receiveTcp();
         System.out.println(jsonResponse);
     }
-    
-    public void paxosPrepareProposal (int playerId) throws IOException{
-        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
-        proposalNumber++;
-        JSONObject jsonRequest = new JSONObject();
-        int[] proposalID = {proposalNumber, playerId};
-        jsonRequest.put("method", "prepare_proposal");
-        jsonRequest.put("proposal_id", proposalID);
-        this.sendUdp(jsonRequest, udpTargetIPAddress.get(playerId), udpTargetPort.get(playerId), unreliableSender);
-    }
-    
+        
     public void clientAcceptProposal(int playerId) throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
         jsonRequest.put("method","accepted_proposal");
