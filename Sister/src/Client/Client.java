@@ -14,6 +14,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -29,6 +30,8 @@ public class Client {
     private boolean isProposer;
     private boolean isKPU;
     private int proposalNumber = 0;
+    private ArrayList<Integer> playerIds;
+    private ArrayList<Integer> votes;
     private int previousAcceptedKpuId = 0;
     
     /* UDP */
@@ -58,6 +61,8 @@ public class Client {
         this.datagramSocket = new DatagramSocket();
         this.udpTargetIPAddress = new ArrayList<InetAddress>();
         this.udpTargetPort = new ArrayList<Integer>();
+        this.playerIds = new ArrayList<Integer>();
+        this.votes = new ArrayList<Integer>();
         otherClientsChecker = new Runnable(){
             public void run(){
                 try {
@@ -444,6 +449,61 @@ public class Client {
         System.out.println(jsonRequest);
         org.json.JSONObject jsonResponse = new org.json.JSONObject();
         //jsonResponse = receiveUdp();
+        System.out.println(jsonResponse);
+    }
+    
+    public org.json.JSONObject killWereWolfResponse (org.json.JSONObject request) {
+        org.json.JSONObject jsonResponse = new org.json.JSONObject();        
+        String status;
+        String message;
+        int playerId, vote = 0;
+                
+        if (request.has("method")) {
+            int retrievePlayerId = request.getInt("player_id");
+            int occurences = Collections.frequency(playerIds,retrievePlayerId);
+            if (occurences == 0){
+                playerIds.add(retrievePlayerId);
+                votes.add(vote++);
+            } else {
+                int indexPlayerId = playerIds.indexOf(retrievePlayerId);
+                votes.set(indexPlayerId, vote++);
+            }
+            status = "ok";
+            message = "we have received your vote";
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
+        return jsonResponse;
+    }
+    
+    public int recapitulateWerewolfVote(){
+        int occurences = Collections.frequency(votes, Collections.max(votes));
+        double totalCount = 0;
+        for (Integer count : votes){
+            totalCount += count;
+        }
+        if (totalCount % 2 == 0 && Collections.max(votes) == totalCount / 2){
+            
+        } else {
+            if (occurences >= (Math.ceil(totalCount / 2.0) + 1)){
+                int index = votes.indexOf(Collections.max(votes));
+                return playerIds.get(index);
+            }
+        }
+        return -1;
+    }
+    
+    public void infoWerewolfKilled() throws IOException, ParseException{
+        JSONObject jsonRequest = new JSONObject();
+        jsonRequest.put("method", "vote_result_werewolf");
+        jsonRequest.put("vote_status",1);
+        jsonRequest.put("player_killed",4);
+        jsonRequest.put("vote_result","abc");
+        sendTcp(jsonRequest);
+        JSONObject jsonResponse = receiveTcp();
         System.out.println(jsonResponse);
     }
     
