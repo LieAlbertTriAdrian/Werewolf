@@ -34,6 +34,7 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private ArrayList<Socket> connectionSocket;
+    public static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
     private ArrayList<JSONObject> Clients;
     private Runnable receiver;
     private Runnable serverCron;
@@ -45,7 +46,6 @@ public class Server {
     private ArrayList<Integer> kpuIds;
     private ArrayList<Integer> votes;
     private ArrayList<Boolean> readyStates;
-    public static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
 
 
     public Server (int port) throws IOException {
@@ -55,6 +55,7 @@ public class Server {
         this.isGameRunning = false;
         this.isKPUElected = false;
         this.connectionSocket = new ArrayList<Socket>();
+        datagramSockets = new ArrayList<DatagramSocket>();
         this.kpuIds = new ArrayList<Integer>();
         this.votes = new ArrayList<Integer>();
         this.readyStates = new ArrayList<Boolean>();
@@ -141,6 +142,7 @@ public class Server {
                 }
             }
         };
+
     }
     
     public JSONObject getClient(int playerId){
@@ -165,6 +167,7 @@ public class Server {
             send(jsonResponse, i);
         }
     }
+
     
     public void stopServer () throws IOException {
         serverSocket.close();

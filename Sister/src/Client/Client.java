@@ -41,6 +41,7 @@ public class Client {
     private int udpPort;
     private ArrayList<InetAddress> udpTargetIPAddress;
     private ArrayList<Integer> udpTargetPort;
+    private ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
 
     private DatagramSocket datagramSocket;
     private Runnable udpSender;
@@ -68,6 +69,7 @@ public class Client {
         this.playerIds = new ArrayList<Integer>();
         this.votes = new ArrayList<Integer>();
         this.otherClients = new ArrayList<Client>();
+        Server.Server.datagramSockets.add(this.datagramSocket);
         otherClientsChecker = new Runnable(){
             public void run(){
                 try {
@@ -195,12 +197,11 @@ public class Client {
                         InetAddress currentIPAddress = udpTargetIPAddress.get(senderId);
                         int currentPort = udpTargetPort.get(senderId);
                         System.out.println("prepare_proposal_response : " + currentIPAddress + ":" + currentPort);
-                        DatagramSocket senderSocket = new DatagramSocket(currentPort);
-                        UnreliableSender unreliableSender = new UnreliableSender(senderSocket);
+                        UnreliableSender unreliableSender = new UnreliableSender(Server.Server.datagramSockets.get(senderId));
                         System.out.println("before send UDP " + currentIPAddress + ":" + currentPort);
                         sendUdp(response,currentIPAddress,currentPort,unreliableSender);
                         System.out.println("addPrepareProposalReceived");
-                        addPrepareProposalReceiver(currentPort);
+                        addPrepareProposalReceiver(Server.Server.datagramSockets.get(senderId));
                     }
                         
                     //parsemessage
@@ -212,19 +213,19 @@ public class Client {
         new Thread(receiver).start();
     }
 
-    public void addPrepareProposalReceiver (final int currentPort) {
+    public void addPrepareProposalReceiver (final DatagramSocket senderSocket) {
         Runnable receiverPrepareProposal = new Runnable(){
             public void run(){
-                try { 
-                    receivePrepareProposal(currentPort);
+                System.out.println("run add prepare proposal");
+                try {
+                    receivePrepareProposal(senderSocket);
                 } catch (IOException ex) {
                     Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (ParseException ex) {
                     Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                 }
             }
-            public void receivePrepareProposal(int myPort) throws IOException, ParseException{
-                DatagramSocket mySocket = new DatagramSocket(myPort);
+            public void receivePrepareProposal(DatagramSocket mySocket) throws IOException, ParseException{
                 byte[] receiveData = new byte[1024];
 
                 while (true) {
@@ -473,8 +474,6 @@ public class Client {
             readyUp();
         } else if (method.equals("client_address")){
             listClient();
-        } else if (method.split(" ")[0].equals("get_other")){
-            getOther(method.split(" ")[1]);
         } else if (method.equals("accepted_proposal")){
             clientAcceptProposal(1);
         }
@@ -512,7 +511,10 @@ public class Client {
                         
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
+        if (jsonResponse.get("status").equals("ok"))
+            
         System.out.println(jsonResponse);
+        
     }
     
     public void leaveGame() throws IOException, ParseException{
@@ -538,15 +540,6 @@ public class Client {
         JSONObject response = receiveTcp();
         System.out.println(response);
         return response;
-    }
-    
-    public void getOther(String playerId) throws IOException, ParseException {
-        JSONObject jsonRequest = new JSONObject();
-        jsonRequest.put("method","get_other");
-        jsonRequest.put("playerId",playerId);
-        sendTcp(jsonRequest);
-        JSONObject jsonResponse = receiveTcp();
-        System.out.println(jsonResponse);
     }
     
     public void infoWerewolfKilled() throws IOException, ParseException{
