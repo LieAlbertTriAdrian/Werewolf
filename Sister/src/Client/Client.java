@@ -189,9 +189,10 @@ public class Client {
                 System.out.println("Enter playerId that you want to vote: ");
                 Scanner sc = new Scanner(System.in);
                 ArrayList<Integer> acceptors = new ArrayList<Integer>();
-                for(int i = 0; i < playerId - 1; i++)
+                for(int i = 0; i < udpTargetIPAddress.size() - 2; i++)
                     acceptors.add(i);
                 int votedId = sc.nextInt();
+                int senderId = playerId;
                 paxosPrepareProposal(votedId, playerId, acceptors);
                 break;
             case "broadcast":
@@ -233,13 +234,12 @@ public class Client {
         this.datagramSocket.close();
     }
     
-    public void paxosPrepareProposal (int playerId, int senderId, ArrayList<Integer> acceptors) throws IOException, ParseException{
-        UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
+    public void paxosPrepareProposal (int votedId, int senderId, ArrayList<Integer> acceptors) throws IOException, ParseException{
         proposalNumber++;
         JSONObject request = new JSONObject();
         ArrayList<Integer> proposal_id = new ArrayList<Integer>();
         proposal_id.add(proposalNumber);
-        proposal_id.add(playerId);
+        proposal_id.add(votedId);
         request.put("method", "prepare_proposal");
         request.put("proposal_id", proposal_id);
         request.put("sender_id", senderId);        
