@@ -74,7 +74,7 @@ public class Client {
         this.votes = new ArrayList<Integer>();
         this.otherClients = new ArrayList<Client>();
         this.usernames = new ArrayList<String>();
-        isRunning = true;
+        isRunning = false;
         otherClientsChecker = new Runnable(){
             public void run(){
                 try {
@@ -99,6 +99,7 @@ public class Client {
     
 
     public void start() throws IOException, ParseException{
+        isRunning = true;
         System.out.println("You Have Join the Game");
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         addReceiver();
@@ -152,31 +153,35 @@ public class Client {
             jsonRequest.put("method","client_address");
             sendTcp(jsonRequest);
             jsonResponse = receiveTcp();
-            JSONArray jr = (JSONArray)jsonResponse.get("clients");
-            if(udpTargetIPAddress.size() == 0){
-                for(int i = 0; i < jr.length(); i++){
+            if(jsonResponse.has("method")){
+                start();
+            }else{
+                JSONArray jr = (JSONArray)jsonResponse.get("clients");
+                if(udpTargetIPAddress.size() == 0){
+                    for(int i = 0; i < jr.length(); i++){
+                        udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
+                        udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
+                        usernames.add(jr.getJSONObject(i).getString("username"));
+                    }
+                }else if(jr.length() > udpTargetIPAddress.size()){
+                    int i = jr.length() - 1;
+                    System.out.println(jr.getJSONObject(i).get("username") + " Has Join the Game");
                     udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
                     udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
                     usernames.add(jr.getJSONObject(i).getString("username"));
+                }else if(jr.length() < udpTargetIPAddress.size()){
+                    int i = 0;
+                    for(i = 0; i < udpTargetPort.size(); i++){
+                        if(jr.getJSONObject(i).getInt("port") != udpTargetPort.get(i)) break;
+                    }
+                    System.out.println(usernames.get(i) + " Has Left the Game");
+                    udpTargetIPAddress.remove(i);
+                    udpTargetPort.remove(i);
+                    usernames.remove(i);
                 }
-            }else if(jr.length() > udpTargetIPAddress.size()){
-                int i = jr.length() - 1;
-                System.out.println(jr.getJSONObject(i).get("username") + " Has Join the Game");
-                udpTargetIPAddress.add(InetAddress.getByName(jr.getJSONObject(i).get("address").toString()));
-                udpTargetPort.add(Integer.parseInt(jr.getJSONObject(i).get("port").toString()));
-                usernames.add(jr.getJSONObject(i).getString("username"));
-            }else if(jr.length() < udpTargetIPAddress.size()){
-                int i = 0;
-                for(i = 0; i < udpTargetPort.size(); i++){
-                    if(jr.getJSONObject(i).getInt("port") != udpTargetPort.get(i)) break;
-                }
-                System.out.println(usernames.get(i) + " Has Left the Game");
-                udpTargetIPAddress.remove(i);
-                udpTargetPort.remove(i);
-                usernames.remove(i);
+                sleep(1000);
             }
-            sleep(1000);
-        }while(isRunning);
+        }while(!isRunning);
     }
     
     /****************  UDP Method   ****************/    

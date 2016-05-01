@@ -93,7 +93,7 @@ public class Server {
                         i++;
                     }
                     if (i == readyStates.size()){
-                        startGame();
+                        isGameRunning = true;
                     }
                     
                     /*Kondisi Game Over */
@@ -146,8 +146,13 @@ public class Server {
                         jsonResponse = readyUpResponse(jsonRequest);
                         readyStates.set(i, true);
                     }
-                    else if (method.equals("client_address"))
-                        jsonResponse = listClient(jsonRequest);
+                    else if (method.equals("client_address")){
+                        if(isGameRunning){
+                            startGame();
+                        }else{
+                            jsonResponse = listClient(jsonRequest);
+                        }
+                    }
                     else if (method.equals("vote_result_werewolf"))
                         jsonResponse = infoWerewolfKilledResponse(jsonRequest);
                     else if (method.equals("accepted_proposal")){
