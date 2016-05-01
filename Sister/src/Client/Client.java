@@ -451,25 +451,6 @@ public class Client {
         return jsonResponse;
     }
     
-    public JSONObject kpuSelectedResponse (JSONObject request) {
-        JSONObject jsonResponse = new JSONObject();        
-        String status;
-        String message;
-        int playerId, vote = 0;
-                
-        if (request.has("method")) {
-            kpuId = request.getInt("kpu_id");
-            status = "ok";
-            message = "kpu id has been received";
-        } else {
-            status = "error";
-            message = "wrong request";
-        }
-        jsonResponse.put("status", status);            
-        jsonResponse.put("description", message);            
-        return jsonResponse;
-    }
-    
     public int recapitulateWerewolfVote(){
         int occurences = Collections.frequency(votes, Collections.max(votes));
         double totalCount = 0;
@@ -551,7 +532,7 @@ public class Client {
         jsonRequest.put("method","leave");
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
-        
+        System.out.println(jsonResponse);
         if(jsonResponse.get("status").equals("ok")){
             return true;
         }else{
@@ -565,7 +546,7 @@ public class Client {
         jsonRequest.put("method","ready");
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
-        
+        System.out.println(jsonResponse);
         if(jsonResponse.get("status").equals("ok")){
             return true;
         }else{
@@ -617,6 +598,26 @@ public class Client {
         org.json.JSONObject jsonResponse = new org.json.JSONObject();
         //jsonResponse = receive();
         System.out.println(jsonResponse);
+    }
+    
+    /*******************TCP Responses*********************/
+    public JSONObject kpuSelectedResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        String message;
+        int playerId, vote = 0;
+                
+        if (request.has("method")) {
+            kpuId = request.getInt("kpu_id");
+            status = "ok";
+            message = "kpu id has been received";
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
+        return jsonResponse;
     }
     
     public static void main(String args[]) throws IOException, ParseException {
