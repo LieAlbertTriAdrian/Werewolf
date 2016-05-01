@@ -44,6 +44,7 @@ public class Server {
     private boolean isGameRunning;
     private boolean isKPUElected;
     private int kpuElected;
+    private String winner;
     private ArrayList<Integer> kpuIds;
     private ArrayList<Integer> votes;
     private ArrayList<Boolean> readyStates;
@@ -80,16 +81,33 @@ public class Server {
             
             public void serverCronChecking() throws IOException, InterruptedException{
                 while(true){
+                    /* Pemilihan KPU */
                     if (isKPUElected){
                         kpuSelected();
                         isKPUElected = false;
                     }
+                    
+                    /* Kondisi Start Game */
                     int i = 0;
                     while (i <= readyStates.size() && readyStates.get(i)){
                         i++;
                     }
                     if (i == readyStates.size()){
                         //startGame();
+                    }
+                    
+                    /*Kondisi Game Over */
+                    int countWerewolf = 0;
+                    int countCivilian = 0;
+                    for(JSONObject Client : Clients){
+                        if (Client.get("role").equals("werewolf")){
+                            countWerewolf++;
+                        } else if (Client.get("role").equals("civilian")){
+                            countCivilian++;
+                        }
+                    }
+                    if (countWerewolf == countCivilian || countWerewolf == 0){
+                        gameOver();
                     }
                     sleep(5000);
                 }
@@ -414,12 +432,16 @@ public class Server {
        System.out.println(jsonRequest);
    }
    
-   public void gameOver(int index) throws IOException{
+   public void gameOver() throws IOException{
        JSONObject jsonRequest = new JSONObject();
        jsonRequest.put("method","game_over");
-       jsonRequest.put("winner","werewolf");
-       jsonRequest.put("description","PUT NARRATION HERE");
-       send(jsonRequest, index);
+       jsonRequest.put("winner",winner);
+       if (winner.equals("werewolf")){
+           jsonRequest.put("description","Civilians have been defeated");
+       } else if (winner.equals("civilian")){
+           jsonRequest.put("description","Werewolves have been defeated");
+       }
+       broadcastServer(jsonRequest);
        System.out.println(jsonRequest);
    }
    
