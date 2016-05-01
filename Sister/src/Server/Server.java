@@ -35,7 +35,7 @@ public class Server {
     private int listenPort;
     private ServerSocket serverSocket;
     private ArrayList<Socket> connectionSocket;
-    public static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
+    private static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
     private ArrayList<JSONObject> Clients;
     private Runnable receiver;
     private Runnable serverCron;
@@ -49,7 +49,14 @@ public class Server {
     private ArrayList<Integer> votes;
     private ArrayList<Boolean> readyStates;
 
+    public static final void addDatagramSockets (DatagramSocket socket) {
+        datagramSockets.add(socket);
+    }
 
+    public static ArrayList<DatagramSocket> getDatagramSockets () {
+        return datagramSockets;
+    }
+            
     public Server (int port) throws IOException {
         this.listenPort = port;
         this.serverSocket = new ServerSocket(listenPort);
