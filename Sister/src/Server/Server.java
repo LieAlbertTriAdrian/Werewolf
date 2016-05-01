@@ -242,7 +242,8 @@ public class Server {
     }
     
     public JSONObject clientAcceptedResponse (JSONObject request) {
-        JSONObject jsonResponse = new JSONObject();        
+        JSONObject jsonResponse = new JSONObject();  
+        System.out.println(jsonResponse);
         String status;
         String message;
         int playerId, vote = 0;
