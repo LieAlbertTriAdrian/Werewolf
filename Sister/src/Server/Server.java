@@ -45,6 +45,8 @@ public class Server {
     private ArrayList<Integer> kpuIds;
     private ArrayList<Integer> votes;
     private ArrayList<Boolean> readyStates;
+    public static ArrayList<DatagramSocket> datagramSockets = new ArrayList<DatagramSocket>();
+
 
     public Server (int port) throws IOException {
         this.listenPort = port;
