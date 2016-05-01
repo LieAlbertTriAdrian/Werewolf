@@ -101,12 +101,17 @@ public class Client {
                         callUdp(sentence, currentPlayerId);
                     }else if(words[0].equals("toServer")){
                         callTcp(sentence);
+                    }else if(words[0].equals("broadcast")){
+                        ArrayList<Integer> acceptors = new ArrayList<Integer>();
+                        for(int i = 0; i < playerId - 1; i++)
+                            acceptors.add(i);
+                        
                     }
                 }
             }
         }
     }
-        
+    
     public boolean getIsKPU () {
         return this.isKPU;
     }
