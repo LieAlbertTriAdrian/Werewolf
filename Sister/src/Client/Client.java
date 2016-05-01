@@ -29,9 +29,11 @@ public class Client {
     private int playerId;
     private boolean isProposer;
     private boolean isKPU;
+    private int kpuId;
     private int proposalNumber = 0;
     private ArrayList<Integer> playerIds;
     private ArrayList<Integer> votes;
+    private ArrayList<ArrayList<Integer>> vote_results;
     private int previousAcceptedKpuId = 0;
     
     /* UDP */
@@ -105,7 +107,6 @@ public class Client {
                         ArrayList<Integer> acceptors = new ArrayList<Integer>();
                         for(int i = 0; i < playerId - 1; i++)
                             acceptors.add(i);
-                        
                     }
                 }
             }
@@ -416,12 +417,12 @@ public class Client {
     }
     
 
-    public void killWerewolf(int player_id) throws IOException, ParseException{
+    public void killWerewolf(int killId) throws IOException, ParseException{
         UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
         org.json.JSONObject jsonRequest = new org.json.JSONObject();
         jsonRequest.put("method", "vote_werewolf");
-        jsonRequest.put("player_id", player_id);
-        //sendUdp(jsonRequest, targetIPAddress, targetPort, unreliableSender);
+        jsonRequest.put("player_id", killId);
+        sendUdp(jsonRequest, udpTargetIPAddress.get(kpuId), udpTargetPort.get(kpuId), unreliableSender);
         System.out.println(jsonRequest);
         org.json.JSONObject jsonResponse = new org.json.JSONObject();
         //jsonResponse = receiveUdp();
@@ -447,6 +448,25 @@ public class Client {
             }
             status = "ok";
             message = "we have received your vote";
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
+        return jsonResponse;
+    }
+    
+    public JSONObject kpuSelectedResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        String message;
+        int playerId, vote = 0;
+                
+        if (request.has("method")) {
+            kpuId = request.getInt("kpu_id");
+            status = "ok";
+            message = "kpu id has been received";
         } else {
             status = "error";
             message = "wrong request";
@@ -546,6 +566,7 @@ public class Client {
         request.put("method","client_address");
         sendTcp(request);
         JSONObject response = receiveTcp();
+        System.out.println(response);
         return response;
     }
     
@@ -560,10 +581,23 @@ public class Client {
     
     public void infoWerewolfKilled() throws IOException, ParseException{
         JSONObject jsonRequest = new JSONObject();
+        vote_results = new ArrayList<ArrayList<Integer>>();
+        for (int temp : playerIds){
+            ArrayList<Integer> result = new ArrayList<Integer>();
+            int index = playerIds.indexOf(temp);
+            result.add(temp);
+            result.add(votes.indexOf(index));
+            vote_results.add(result);
+        }
+        int playerKilled = recapitulateWerewolfVote();
         jsonRequest.put("method", "vote_result_werewolf");
-        jsonRequest.put("vote_status",1);
-        jsonRequest.put("player_killed",4);
-        jsonRequest.put("vote_result","abc");
+        if (playerKilled == -1){
+            jsonRequest.put("vote_status",-1);
+        } else {
+            jsonRequest.put("vote_status",1);
+            jsonRequest.put("player_killed",playerKilled);
+        }
+        jsonRequest.put("vote_result",vote_results);
         sendTcp(jsonRequest);
         JSONObject jsonResponse = receiveTcp();
         System.out.println(jsonResponse);

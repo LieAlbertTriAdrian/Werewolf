@@ -10,6 +10,7 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import static java.lang.Thread.sleep;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
@@ -35,6 +36,7 @@ public class Server {
     private ArrayList<Socket> connectionSocket;
     private ArrayList<JSONObject> Clients;
     private Runnable receiver;
+    private Runnable serverCron;
     private String round;
     private int day;
     private boolean isGameRunning;
@@ -42,6 +44,7 @@ public class Server {
     private int kpuElected;
     private ArrayList<Integer> kpuIds;
     private ArrayList<Integer> votes;
+    private ArrayList<Boolean> readyStates;
 
     public Server (int port) throws IOException {
         this.listenPort = port;
@@ -52,6 +55,35 @@ public class Server {
         this.connectionSocket = new ArrayList<Socket>();
         this.kpuIds = new ArrayList<Integer>();
         this.votes = new ArrayList<Integer>();
+        this.readyStates = new ArrayList<Boolean>();
+        serverCron = new Runnable(){
+            public void run(){
+                try {
+                    serverCronChecking();
+                } catch (IOException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                } catch (InterruptedException ex) {
+                    Logger.getLogger(Server.class.getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            
+            public void serverCronChecking() throws IOException, InterruptedException{
+                while(true){
+                    if (isKPUElected){
+                        kpuSelected();
+                        isKPUElected = false;
+                    }
+                    int i = 0;
+                    while (i <= readyStates.size() && readyStates.get(i)){
+                        i++;
+                    }
+                    if (i == readyStates.size()){
+                        //startGame();
+                    }
+                    sleep(5000);
+                }
+            }
+        };
         receiver = new Runnable() {
             int index;
             public void run(){
@@ -71,7 +103,7 @@ public class Server {
                 int i = this.index;
                 int counterClient = 0;
                 while(true) {             
-                    System.out.println(i+": "+connectionSocket.get(i));
+                    System.out.println(i+": "+ connectionSocket.get(i));
                     JSONObject jsonRequest = receive(i);
                     JSONObject jsonResponse = new JSONObject();
                     System.out.println(jsonRequest);
@@ -81,10 +113,14 @@ public class Server {
                         jsonResponse = joinGameResponse(jsonRequest);
                     else if(method.equals("leave"))
                         jsonResponse = leaveGameResponse(jsonRequest);
-                    else if (method.equals("ready"))
+                    else if (method.equals("ready")){
                         jsonResponse = readyUpResponse(jsonRequest);
+                        readyStates.set(i, true);
+                    }
                     else if (method.equals("client_address"))
                         jsonResponse = listClient(jsonRequest);
+                    else if (method.equals("vote_result_werewolf"))
+                        jsonResponse = infoWerewolfKilledResponse(jsonRequest);
                     else if (method.equals("accepted_proposal")){
                         jsonResponse = clientAcceptedResponse(jsonRequest);
                         counterClient++;
@@ -118,6 +154,13 @@ public class Server {
             Socket s = serverSocket.accept();
             connectionSocket.add(s);
             new Thread(receiver).start();
+            new Thread(serverCron).start();
+        }
+    }
+    
+    public void broadcastServer(JSONObject jsonResponse) throws IOException{
+        for (int i = 0; i < Clients.size(); i++){
+            send(jsonResponse, i);
         }
     }
     
@@ -268,6 +311,33 @@ public class Server {
         jsonResponse.put("description", message);            
         return jsonResponse;
     }
+    
+    public JSONObject infoWerewolfKilledResponse (JSONObject request) {
+        JSONObject jsonResponse = new JSONObject();        
+        String status;
+        String message;
+        int playerKilled = 0;
+        
+        /* Error Handling */        
+        if (request.has("method")) {
+            if (request.getInt("vote_status") == 1){
+                playerKilled = request.getInt("player_killed");
+            }
+            for (JSONObject client : Clients){
+                if (playerKilled == client.getInt("player_id")){
+                    client.put("is_alive",0);
+                }
+            }
+            status = "ok";
+            message = "";
+        } else {
+            status = "error";
+            message = "wrong request";
+        }
+        jsonResponse.put("status", status);            
+        jsonResponse.put("description", message);            
+        return jsonResponse;
+    }
 
 
     /******************** Checking Function ********************/
@@ -340,15 +410,11 @@ public class Server {
        System.out.println(jsonRequest);
    }
    
-   public void kpuSelected(int index) throws IOException{
+   public void kpuSelected() throws IOException{
        JSONObject jsonRequest = new JSONObject();
        jsonRequest.put("method","kpu_selected");
-       if (isKPUElected){
-           jsonRequest.put("kpu_id", kpuElected);
-       } else {
-           jsonRequest.put("description", "kpu has not been elected");
-       }
-       send(jsonRequest, index);
+       jsonRequest.put("kpu_id", kpuElected);
+       broadcastServer(jsonRequest);
        System.out.println(jsonRequest);
    }
     
