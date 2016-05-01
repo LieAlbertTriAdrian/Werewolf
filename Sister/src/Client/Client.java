@@ -195,7 +195,7 @@ public class Client {
                             System.out.println("Response " + response);
                             int senderId = response.getInt("sender_id");
                             ArrayList<Integer> acceptors = new ArrayList<Integer>();
-                            for(int j = 0; j <= senderId; j++)
+                            for(int j = 0; j < senderId; j++)
                                 acceptors.add(j);                        
                             broadcastPrepareProposalUDP(response,acceptors,senderId);
                     } else {
@@ -264,7 +264,7 @@ public class Client {
                 System.out.print("Enter playerId that you want to vote: ");
                 Scanner sc = new Scanner(System.in);
                 ArrayList<Integer> acceptors = new ArrayList<Integer>();
-                for(int i = 0; i <= playerId; i++)
+                for(int i = 0; i < playerId; i++)
                     acceptors.add(i);
                 int votedId = sc.nextInt();
                 int senderId = playerId;
@@ -317,11 +317,11 @@ public class Client {
             System.out.println("datagram socket : " + this.datagramSocket);
             UnreliableSender unreliableSender = new UnreliableSender(this.datagramSocket);
             if (i < acceptors.size() - 2) {
+                sendUdp(request,currentIPAddress,currentPort,unreliableSender);            
+            } else {
                 JSONObject none = new JSONObject();
                 none.put("none", "testing broadcast udp");
                 sendUdp(none,currentIPAddress,currentPort,unreliableSender);
-            } else {
-                sendUdp(request,currentIPAddress,currentPort,unreliableSender);            
             }
         }
     }
